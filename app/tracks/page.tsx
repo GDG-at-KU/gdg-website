@@ -1,0 +1,1 @@
+import { SectionPage } from "../components/SectionPage"; export default function Tracks(){return <SectionPage number="03" eyebrow="Learning tracks" title="Find your thread." text="Choose an area, follow your curiosity, and learn alongside a community that wants you to succeed." items={["AI & ML","Web Development","Cloud","Android & Flutter","Career growth"]}/>}
