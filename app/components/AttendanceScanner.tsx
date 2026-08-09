@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import styles from "../member/member.module.css";
 import type { GdgMember } from "./MemberAuth";
 
 type ScannerControls = { stop: () => void };
@@ -56,23 +55,23 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
   }
 
   return (
-    <section className={styles.scanner} aria-labelledby="attendance-title">
-      <div className={styles.scannerHead}>
-        <div><p className={styles.eyebrow}>MEMBER CHECK-IN</p><h2 id="attendance-title">Scan in.<br /><i>Show up.</i></h2></div>
-        <span className={styles.liveDot}>LIVE CAMERA</span>
+    <section className={"member-scanner"} aria-labelledby="attendance-title">
+      <div className="member-scanner-head">
+        <div><p className={"member-eyebrow"}>MEMBER CHECK-IN</p><h2 id="attendance-title">Scan in.<br /><i>Show up.</i></h2></div>
+        <span className={"member-live-dot"}>LIVE CAMERA</span>
       </div>
-      <div className={styles.cameraFrame}>
-        <video ref={videoRef} className={styles.video} muted playsInline autoPlay aria-label="Camera preview for scanning an event QR code" />
-        {!isScanning && !result && <div className={styles.cameraPlaceholder}><b>QR</b><span>Ready when you are</span></div>}
-        {isScanning && <div className={styles.scanGuide} aria-hidden="true" />}
+      <div className={"member-camera-frame"}>
+        <video ref={videoRef} className={"member-camera-video"} muted playsInline autoPlay aria-label="Camera preview for scanning an event QR code" />
+        {!isScanning && !result && <div className={"member-camera-placeholder"}><b>QR</b><span>Ready when you are</span></div>}
+        {isScanning && <div className={"member-scan-guide"} aria-hidden="true" />}
       </div>
-      <div className={styles.scannerActions}>
-        {!isScanning ? <button className={styles.scanButton} onClick={startScan}>Open camera <b>?</b></button> : <button className={styles.stopButton} onClick={stopScan}>Stop camera</button>}
+      <div className="member-scanner-actions">
+        {!isScanning ? <button className={"member-scan-button"} onClick={startScan}>Open camera <b>?</b></button> : <button className={"member-stop-button"} onClick={stopScan}>Stop camera</button>}
         <p>Use the QR code displayed by the event host. Your camera stays on this device.</p>
       </div>
-      {error && <p className={styles.error}>{error}</p>}
-      {result && <div className={styles.scanResult}><span>CODE CAPTURED</span><b>{result}</b><p>This scan is attached to {member.email}. Server-side attendance verification is the next step.</p></div>}
-      <form className={styles.manualForm} onSubmit={submitManual}><label htmlFor="attendance-code">Have a short event code instead?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="e.g. BUILD-NIGHT-01" /><button type="submit">Check in</button></div></form>
+      {error && <p className={"member-error"}>{error}</p>}
+      {result && <div className={"member-scan-result"}><span>CODE CAPTURED</span><b>{result}</b><p>This scan is attached to {member.email}. Server-side attendance verification is the next step.</p></div>}
+      <form className={"member-manual-form"} onSubmit={submitManual}><label htmlFor="attendance-code">Have a short event code instead?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="e.g. BUILD-NIGHT-01" /><button type="submit">Check in</button></div></form>
     </section>
   );
 }

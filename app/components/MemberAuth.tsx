@@ -3,7 +3,6 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink, signOut } from "firebase/auth";
 import { firebaseConfigured, memberAuth, persistMemberSession } from "../lib/firebase";
-import styles from "../member/member.module.css";
 
 const EMAIL_KEY = "gdg-ku-email-link";
 export type GdgMember = { uid: string; email: string };
@@ -56,19 +55,19 @@ export function MemberAuth({ children }: Props) {
     if (memberAuth) await signOut(memberAuth);
   }
 
-  if (loading) return <main className={styles.memberPage}><div className={styles.authLoading}>Loading your member pass...</div></main>;
+  if (loading) return <main className={"member-page"}><div className={"member-auth-loading"}>Loading your member pass...</div></main>;
   if (member) return <>{children(member)}</>;
 
-  return <main className={styles.memberPage}>
-    <section className={styles.authShell}>
-      <a href="/" className={styles.brand}>GDG <span /> <em>ON CAMPUS<br />KU</em></a>
-      <div className={styles.authCard}>
-        <p className={styles.eyebrow}>GDG KU MEMBER PASS</p>
+  return <main className={"member-page"}>
+    <section className={"member-auth-shell"}>
+      <a href="/" className={"member-brand"}>GDG <span /> <em>ON CAMPUS<br />KU</em></a>
+      <div className={"member-auth-card"}>
+        <p className={"member-eyebrow"}>GDG KU MEMBER PASS</p>
         <h1>{isEmailLink ? "Confirm your\nKU email." : "Your pass\nstarts here."}</h1>
         <p>Use your KU email once. After you verify it, this PWA remembers your member pass on this phone.</p>
-        {!firebaseConfigured && <p className={styles.authWarning}>Firebase is not configured on this device yet.</p>}
+        {!firebaseConfigured && <p className={"member-auth-warning"}>Firebase is not configured on this device yet.</p>}
         <form onSubmit={submitEmail}><label htmlFor="member-email">KU email address</label><input id="member-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@ku.edu" required /><button type="submit" disabled={!firebaseConfigured}>{isEmailLink ? "Verify email" : "Send sign-in link"}</button></form>
-        {message && <p className={styles.authMessage}>{message}</p>}
+        {message && <p className={"member-auth-message"}>{message}</p>}
         <small>No passwords. Your KU email proves your membership for this temporary sign-in system.</small>
       </div>
     </section>
@@ -76,5 +75,5 @@ export function MemberAuth({ children }: Props) {
 }
 
 export function MemberSignOut() {
-  return <button className={styles.signOut} onClick={() => { if (memberAuth) void signOut(memberAuth); }}>Sign out</button>;
+  return <button className={"member-sign-out"} onClick={() => { if (memberAuth) void signOut(memberAuth); }}>Sign out</button>;
 }
