@@ -12,7 +12,7 @@
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "dev:phone": "vinext dev --host 0.0.0.0",
+    "dev:phone": "vinext dev --hostname 0.0.0.0",
     "phone:qr": "node scripts/generate-phone-qr.mjs"
   },
   "dependencies": {
