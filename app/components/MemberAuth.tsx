@@ -5,6 +5,7 @@ import { isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signI
 import { firebaseConfigured, memberAuth, persistMemberSession } from "../lib/firebase";
 
 const EMAIL_KEY = "gdg-ku-email-link";
+const TEST_EMAIL_DOMAIN = "@gmail.com";
 export type GdgMember = { uid: string; email: string };
 
 type Props = { children: (member: GdgMember) => ReactNode };
@@ -22,7 +23,7 @@ export function MemberAuth({ children }: Props) {
     setIsEmailLink(isSignInWithEmailLink(memberAuth, window.location.href));
     const unsubscribe = onAuthStateChanged(memberAuth, (user) => {
       const verifiedEmail = user?.email?.toLowerCase();
-      setMember(user && verifiedEmail?.endsWith("@ku.edu") ? { uid: user.uid, email: verifiedEmail } : null);
+      setMember(user && verifiedEmail?.endsWith(TEST_EMAIL_DOMAIN) ? { uid: user.uid, email: verifiedEmail } : null);
       setLoading(false);
     });
     return unsubscribe;
@@ -32,7 +33,7 @@ export function MemberAuth({ children }: Props) {
     event.preventDefault();
     if (!memberAuth) return;
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail.endsWith("@ku.edu")) { setMessage("Use your KU email address ending in @ku.edu."); return; }
+    if (!normalizedEmail.endsWith(TEST_EMAIL_DOMAIN)) { setMessage("For this test, use a Gmail address ending in @gmail.com."); return; }
     try {
       setMessage("");
       await persistMemberSession();
@@ -40,12 +41,12 @@ export function MemberAuth({ children }: Props) {
         await signInWithEmailLink(memberAuth, normalizedEmail, window.location.href);
         window.localStorage.removeItem(EMAIL_KEY);
         window.history.replaceState({}, document.title, "/member");
-        setMessage("Your KU email is verified. Welcome to GDG KU.");
+        setMessage("Your Gmail address is verified. Welcome to GDG KU.");
         return;
       }
       await sendSignInLinkToEmail(memberAuth, normalizedEmail, { url: `${window.location.origin}/member`, handleCodeInApp: true });
       window.localStorage.setItem(EMAIL_KEY, normalizedEmail);
-      setMessage("Check your KU inbox and open the sign-in link on this phone.");
+      setMessage("Check your Gmail inbox and open the sign-in link on this device.");
     } catch {
       setMessage("We could not send or confirm that link. Make sure Email Link is enabled in Firebase and this website domain is authorized.");
     }
@@ -62,13 +63,13 @@ export function MemberAuth({ children }: Props) {
     <section className={"member-auth-shell"}>
       <a href="/" className={"member-brand"}>GDG <span /> <em>ON CAMPUS<br />KU</em></a>
       <div className={"member-auth-card"}>
-        <p className={"member-eyebrow"}>GDG KU MEMBER PASS</p>
+        <p className={"member-eyebrow"}>GDG KU MEMBER PASS · GMAIL TEST</p>
         <h1>{isEmailLink ? "Confirm your\nKU email." : "Your pass\nstarts here."}</h1>
-        <p>Use your KU email once. After you verify it, this PWA remembers your member pass on this phone.</p>
+        <p>Use a Gmail address once to test the member pass. After you verify it, this PWA remembers the pass on this phone.</p>
         {!firebaseConfigured && <p className={"member-auth-warning"}>Firebase is not configured on this device yet.</p>}
-        <form onSubmit={submitEmail}><label htmlFor="member-email">KU email address</label><input id="member-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@ku.edu" required /><button type="submit" disabled={!firebaseConfigured}>{isEmailLink ? "Verify email" : "Send sign-in link"}</button></form>
+        <form onSubmit={submitEmail}><label htmlFor="member-email">Gmail address</label><input id="member-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@gmail.com" required /><button type="submit" disabled={!firebaseConfigured}>{isEmailLink ? "Verify email" : "Send sign-in link"}</button></form>
         {message && <p className={"member-auth-message"}>{message}</p>}
-        <small>No passwords. Your KU email proves your membership for this temporary sign-in system.</small>
+        <small>No passwords. Gmail is enabled temporarily to test Firebase email delivery before KU-only access is restored.</small>
       </div>
     </section>
   </main>;
