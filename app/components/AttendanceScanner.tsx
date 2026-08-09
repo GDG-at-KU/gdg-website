@@ -2,10 +2,11 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import styles from "../member/member.module.css";
+import type { GdgMember } from "./MemberAuth";
 
 type ScannerControls = { stop: () => void };
 
-export function AttendanceScanner() {
+export function AttendanceScanner({ member }: { member: GdgMember }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<ScannerControls | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -70,7 +71,7 @@ export function AttendanceScanner() {
         <p>Use the QR code displayed by the event host. Your camera stays on this device.</p>
       </div>
       {error && <p className={styles.error}>{error}</p>}
-      {result && <div className={styles.scanResult}><span>CODE CAPTURED</span><b>{result}</b><p>This scan is ready for server verification once KU sign-in is connected.</p></div>}
+      {result && <div className={styles.scanResult}><span>CODE CAPTURED</span><b>{result}</b><p>This scan is attached to {member.email}. Server-side attendance verification is the next step.</p></div>}
       <form className={styles.manualForm} onSubmit={submitManual}><label htmlFor="attendance-code">Have a short event code instead?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="e.g. BUILD-NIGHT-01" /><button type="submit">Check in</button></div></form>
     </section>
   );

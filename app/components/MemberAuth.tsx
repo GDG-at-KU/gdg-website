@@ -1,0 +1,80 @@
+"use client";
+
+import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink, signOut } from "firebase/auth";
+import { firebaseConfigured, memberAuth, persistMemberSession } from "../lib/firebase";
+import styles from "../member/member.module.css";
+
+const EMAIL_KEY = "gdg-ku-email-link";
+export type GdgMember = { uid: string; email: string };
+
+type Props = { children: (member: GdgMember) => ReactNode };
+
+export function MemberAuth({ children }: Props) {
+  const [member, setMember] = useState<GdgMember | null>(null);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [isEmailLink, setIsEmailLink] = useState(false);
+
+  useEffect(() => {
+    if (!memberAuth) { setLoading(false); return; }
+    void persistMemberSession();
+    setIsEmailLink(isSignInWithEmailLink(memberAuth, window.location.href));
+    const unsubscribe = onAuthStateChanged(memberAuth, (user) => {
+      const verifiedEmail = user?.email?.toLowerCase();
+      setMember(user && verifiedEmail?.endsWith("@ku.edu") ? { uid: user.uid, email: verifiedEmail } : null);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  async function submitEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!memberAuth) return;
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.endsWith("@ku.edu")) { setMessage("Use your KU email address ending in @ku.edu."); return; }
+    try {
+      setMessage("");
+      await persistMemberSession();
+      if (isEmailLink) {
+        await signInWithEmailLink(memberAuth, normalizedEmail, window.location.href);
+        window.localStorage.removeItem(EMAIL_KEY);
+        window.history.replaceState({}, document.title, "/member");
+        setMessage("Your KU email is verified. Welcome to GDG KU.");
+        return;
+      }
+      await sendSignInLinkToEmail(memberAuth, normalizedEmail, { url: `${window.location.origin}/member`, handleCodeInApp: true });
+      window.localStorage.setItem(EMAIL_KEY, normalizedEmail);
+      setMessage("Check your KU inbox and open the sign-in link on this phone.");
+    } catch {
+      setMessage("We could not send or confirm that link. Make sure Email Link is enabled in Firebase and this website domain is authorized.");
+    }
+  }
+
+  async function logOut() {
+    if (memberAuth) await signOut(memberAuth);
+  }
+
+  if (loading) return <main className={styles.memberPage}><div className={styles.authLoading}>Loading your member pass...</div></main>;
+  if (member) return <>{children(member)}</>;
+
+  return <main className={styles.memberPage}>
+    <section className={styles.authShell}>
+      <a href="/" className={styles.brand}>GDG <span /> <em>ON CAMPUS<br />KU</em></a>
+      <div className={styles.authCard}>
+        <p className={styles.eyebrow}>GDG KU MEMBER PASS</p>
+        <h1>{isEmailLink ? "Confirm your\nKU email." : "Your pass\nstarts here."}</h1>
+        <p>Use your KU email once. After you verify it, this PWA remembers your member pass on this phone.</p>
+        {!firebaseConfigured && <p className={styles.authWarning}>Firebase is not configured on this device yet.</p>}
+        <form onSubmit={submitEmail}><label htmlFor="member-email">KU email address</label><input id="member-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@ku.edu" required /><button type="submit" disabled={!firebaseConfigured}>{isEmailLink ? "Verify email" : "Send sign-in link"}</button></form>
+        {message && <p className={styles.authMessage}>{message}</p>}
+        <small>No passwords. Your KU email proves your membership for this temporary sign-in system.</small>
+      </div>
+    </section>
+  </main>;
+}
+
+export function MemberSignOut() {
+  return <button className={styles.signOut} onClick={() => { if (memberAuth) void signOut(memberAuth); }}>Sign out</button>;
+}
