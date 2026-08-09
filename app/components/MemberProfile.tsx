@@ -41,6 +41,7 @@ export function MemberProfile({ member }: { member: GdgMember }) {
       <label>Graduation year<input value={profile.graduationYear} onChange={(event) => update("graduationYear", event.target.value)} placeholder="e.g. 2028" inputMode="numeric" maxLength={4} /></label>
       <label>LeetCode username<input value={profile.leetCodeUsername} onChange={(event) => update("leetCodeUsername", event.target.value.replace(/^@/, ""))} placeholder="e.g. jayhawk_builder" maxLength={60} /></label>
       <label className="member-profile-wide">Interests (comma-separated)<input value={profile.interests} onChange={(event) => update("interests", event.target.value)} placeholder="AI, web development, interview prep" maxLength={160} /></label>
+      {profile.leetCodeUsername && <a className="member-leetcode-link" href={`https://leetcode.com/u/${encodeURIComponent(profile.leetCodeUsername)}/`} target="_blank" rel="noreferrer">Open @{profile.leetCodeUsername} on LeetCode ↗</a>}
       <div className="member-profile-action"><span>{status}</span><button type="submit">Save profile</button></div>
     </form>
   </section>;
