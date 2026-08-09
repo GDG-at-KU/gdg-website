@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import type { GdgMember } from "./MemberAuth";
+import { saveAttendance } from "../lib/memberData";
 
 type ScannerControls = { stop: () => void };
 
@@ -21,6 +22,17 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
 
   useEffect(() => () => controlsRef.current?.stop(), []);
 
+  async function recordCheckIn(rawCode: string) {
+    try {
+      setError(null);
+      const eventCode = await saveAttendance(member.uid, member.email, rawCode);
+      setResult(eventCode);
+    } catch {
+      setResult(rawCode);
+      setError("We read the event code, but Firestore is not ready to store this check-in yet.");
+    }
+  }
+
   async function startScan() {
     setError(null);
     setResult(null);
@@ -32,7 +44,7 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
         videoRef.current ?? undefined,
         (scanResult) => {
           if (!scanResult) return;
-          setResult(scanResult.getText());
+          void recordCheckIn(scanResult.getText());
           controlsRef.current?.stop();
           controlsRef.current = null;
           setIsScanning(false);
@@ -50,7 +62,7 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
     event.preventDefault();
     const code = manualCode.trim();
     if (!code) return;
-    setResult(code);
+    void recordCheckIn(code);
     setManualCode("");
   }
 
@@ -67,10 +79,10 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
       </div>
       <div className="member-scanner-actions">
         {!isScanning ? <button className={"member-scan-button"} onClick={startScan}>Open camera <b>?</b></button> : <button className={"member-stop-button"} onClick={stopScan}>Stop camera</button>}
-        <p>Use the QR code displayed by the event host. Your camera stays on this device.</p>
+        <p>Each check-in is saved to your member record. This pilot accepts event codes; organizer-signed QR codes come next.</p>
       </div>
       {error && <p className={"member-error"}>{error}</p>}
-      {result && <div className={"member-scan-result"}><span>CODE CAPTURED</span><b>{result}</b><p>This scan is attached to {member.email}. Server-side attendance verification is the next step.</p></div>}
+      {result && <div className={"member-scan-result"}><span>CHECK-IN SAVED</span><b>{result}</b><p>This check-in is attached to your member account.</p></div>}
       <form className={"member-manual-form"} onSubmit={submitManual}><label htmlFor="attendance-code">Have a short event code instead?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="e.g. BUILD-NIGHT-01" /><button type="submit">Check in</button></div></form>
     </section>
   );
