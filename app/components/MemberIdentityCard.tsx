@@ -135,6 +135,13 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
   return <>
     <group position={[0, 4.15, 0]}>
       <RigidBody ref={fixed} {...props} type="fixed" />
+      <group position={[0, .14, -.28]}>
+        <mesh><boxGeometry args={[1.12, .38, .1]} /><meshStandardMaterial color="#09142b" metalness={.38} roughness={.4} /></mesh>
+        <mesh position={[0, .135, .06]}><boxGeometry args={[.86, .035, .018]} /><meshBasicMaterial color="#f6c343" /></mesh>
+        <mesh position={[-.42, -.08, .06]}><circleGeometry args={[.045, 20]} /><meshBasicMaterial color="#f6c343" /></mesh>
+        <mesh position={[.42, -.08, .06]}><circleGeometry args={[.045, 20]} /><meshBasicMaterial color="#f6c343" /></mesh>
+        <mesh position={[0, -.34, .035]}><torusGeometry args={[.15, .035, 10, 28]} /><meshStandardMaterial color="#111827" metalness={.8} roughness={.22} /></mesh>
+      </group>
       <RigidBody position={[0, -.85, 0]} ref={j1} {...props}><BallCollider args={[.1]} /></RigidBody>
       <RigidBody position={[0, -1.7, 0]} ref={j2} {...props}><BallCollider args={[.1]} /></RigidBody>
       <RigidBody position={[0, -2.55, 0]} ref={j3} {...props}><BallCollider args={[.1]} /></RigidBody>
