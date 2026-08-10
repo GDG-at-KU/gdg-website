@@ -7,67 +7,108 @@ import type { GdgMember } from "./MemberAuth";
 
 type Props = { member: GdgMember; profile: MemberProfile };
 
+function cardTexture(member: GdgMember, profile: MemberProfile, back: boolean) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 760;
+  const ctx = canvas.getContext("2d")!;
+  const name = profile.displayName || "GDG Member";
+  ctx.fillStyle = "#f6f4ef";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#ffc72c";
+  ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+  ctx.fillStyle = "#101d36";
+  ctx.font = "800 30px Arial";
+  ctx.letterSpacing = "4px";
+  ctx.fillText(back ? "GDG KU MEMBER PROFILE" : "GOOGLE DEVELOPER GROUPS", 72, 96);
+  ctx.fillStyle = back ? "#101d36" : "#0051ba";
+  ctx.font = "900 210px Arial";
+  ctx.letterSpacing = "-22px";
+  ctx.fillText(back ? name.slice(0, 1).toUpperCase() : "GDG", 70, 340);
+  ctx.letterSpacing = "0px";
+  ctx.fillStyle = "#101d36";
+  ctx.font = "400 68px Georgia";
+  ctx.fillText(back ? name : "GDG on Campus · KU", 74, 446);
+  ctx.font = "700 25px Arial";
+  ctx.fillStyle = "#101d36";
+  const detail = back ? [profile.major, profile.graduationYear && `Class of ${profile.graduationYear}`].filter(Boolean).join("  ·  ") || "Complete your builder profile" : member.email;
+  ctx.fillText(detail, 76, 508);
+  ctx.fillStyle = back ? "#34a853" : "#e51b3e";
+  ctx.font = "900 25px Arial";
+  ctx.letterSpacing = "3px";
+  ctx.fillText(back ? (profile.leetCodeUsername ? `LEETCODE · @${profile.leetCodeUsername}` : "MEMBER PROFILE") : "VERIFIED MEMBER", 76, 665);
+  ctx.fillStyle = "#0051ba";
+  ctx.fillText(back ? "TAP TO FLIP" : "GDG KU · 2026", 900, 665);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 export function MemberIdentityCard({ member, profile }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [showProfile, setShowProfile] = useState(false);
-  const name = profile.displayName || "GDG Member";
-  const details = [profile.major, profile.graduationYear && `Class of ${profile.graduationYear}`].filter(Boolean).join(" · ");
+  const [back, setBack] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-    camera.position.set(0, 0, 9);
-    const group = new THREE.Group();
-    scene.add(group);
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(0, 0.2, 10);
+    const light = new THREE.DirectionalLight(0xffffff, 2.6);
+    light.position.set(-4, 6, 8);
+    scene.add(light, new THREE.AmbientLight(0xffffff, 1.25));
 
-    const card = new THREE.Mesh(
-      new THREE.BoxGeometry(5.85, 3.55, 0.18),
-      new THREE.MeshStandardMaterial({ color: 0xf6f4ef, roughness: 0.7, metalness: 0.04 }),
-    );
-    group.add(card);
-    const outline = new THREE.LineSegments(
-      new THREE.EdgesGeometry(new THREE.BoxGeometry(5.88, 3.58, 0.2)),
-      new THREE.LineBasicMaterial({ color: 0xffc72c }),
-    );
-    group.add(outline);
+    const anchor = new THREE.Vector3(0, 3.45, 0);
+    const length = 3.6;
+    const cardGroup = new THREE.Group();
+    scene.add(cardGroup);
+    const texture = cardTexture(member, profile, back);
+    const badge = new THREE.Mesh(new THREE.BoxGeometry(5.35, 3.38, 0.11), [
+      new THREE.MeshStandardMaterial({ color: 0xffc72c }), new THREE.MeshStandardMaterial({ color: 0xffc72c }),
+      new THREE.MeshStandardMaterial({ color: 0xffc72c }), new THREE.MeshStandardMaterial({ color: 0xffc72c }),
+      new THREE.MeshStandardMaterial({ map: texture, roughness: 0.68 }), new THREE.MeshStandardMaterial({ color: 0xf6f4ef }),
+    ]);
+    cardGroup.add(badge);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.045, 10, 28), new THREE.MeshStandardMaterial({ color: 0xffc72c, metalness: 0.5 }));
+    scene.add(ring);
+    const cordGeometry = new THREE.BufferGeometry();
+    const cord = new THREE.Line(cordGeometry, new THREE.LineBasicMaterial({ color: 0xf6f4ef }));
+    scene.add(cord);
 
-    const shadow = new THREE.Mesh(
-      new THREE.PlaneGeometry(6.5, 4.2),
-      new THREE.MeshBasicMaterial({ color: 0x101d36, transparent: true, opacity: 0.42 }),
-    );
-    shadow.position.set(0.38, -0.42, -0.34);
-    group.add(shadow);
-    scene.add(new THREE.AmbientLight(0xffffff, 1.8));
-    const light = new THREE.PointLight(0xffffff, 25, 20);
-    light.position.set(-3, 4, 6);
-    scene.add(light);
-
-    const colors = [0xffc72c, 0xea4335, 0x34a853, 0x4285f4, 0xffffff];
-    const bodies = colors.map((color, index) => {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(index === 0 ? 0.2 : 0.13, 20, 20), new THREE.MeshStandardMaterial({ color, roughness: 0.4 }));
-      mesh.position.set((index - 2) * 1.15, index % 2 ? 1.35 : -1.35, (index % 3) * 0.35 + 0.18);
-      scene.add(mesh);
-      return { mesh, velocity: new THREE.Vector3((index + 1) * 0.004, (index % 2 ? -1 : 1) * 0.005, (index - 2) * 0.002) };
-    });
-
-    let targetX = 0.08;
-    let targetY = -0.14;
-    let expanded = false;
-    const pointer = (event: PointerEvent) => {
-      const bounds = canvas.getBoundingClientRect();
-      targetY = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.46;
-      targetX = -((event.clientY - bounds.top) / bounds.height - 0.5) * 0.32;
+    let angle = 0.17;
+    let angularVelocity = 0;
+    let dragging = false;
+    let moved = false;
+    let lastPointerTime = 0;
+    let lastAngle = angle;
+    const pointAt = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const vector = new THREE.Vector3(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1, 0);
+      vector.unproject(camera);
+      const direction = vector.sub(camera.position).normalize();
+      const distance = -camera.position.z / direction.z;
+      return camera.position.clone().add(direction.multiplyScalar(distance));
     };
-    const leave = () => { targetX = 0.08; targetY = -0.14; };
-    const toggle = () => { expanded = !expanded; };
-    canvas.addEventListener("pointermove", pointer);
-    canvas.addEventListener("pointerleave", leave);
-    canvas.addEventListener("click", toggle);
+    const down = (event: PointerEvent) => { dragging = true; moved = false; lastPointerTime = performance.now(); canvas.setPointerCapture(event.pointerId); };
+    const move = (event: PointerEvent) => {
+      if (!dragging) return;
+      const point = pointAt(event);
+      const next = Math.max(-1.06, Math.min(1.06, Math.atan2(point.x - anchor.x, anchor.y - point.y)));
+      const now = performance.now();
+      angularVelocity = (next - lastAngle) / Math.max(0.016, (now - lastPointerTime) / 1000);
+      moved ||= Math.abs(next - angle) > 0.025;
+      angle = next;
+      lastAngle = next;
+      lastPointerTime = now;
+    };
+    const up = (event: PointerEvent) => { if (!moved) setBack((value) => !value); dragging = false; if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); };
+    canvas.addEventListener("pointerdown", down);
+    canvas.addEventListener("pointermove", move);
+    canvas.addEventListener("pointerup", up);
+    canvas.addEventListener("pointercancel", up);
 
     const resize = () => {
       const { width, height } = canvas.getBoundingClientRect();
@@ -79,34 +120,27 @@ export function MemberIdentityCard({ member, profile }: Props) {
     observer.observe(canvas);
     resize();
 
-    renderer.setAnimationLoop(() => {
-      group.rotation.x += (targetX - group.rotation.x) * 0.07;
-      const spin = expanded ? Math.PI * 2 + targetY : targetY;
-      group.rotation.y += (spin - group.rotation.y) * 0.055;
-      bodies.forEach(({ mesh, velocity }) => {
-        mesh.position.add(velocity);
-        if (Math.abs(mesh.position.x) > 4.2) velocity.x *= -1;
-        if (Math.abs(mesh.position.y) > 2.4) velocity.y *= -1;
-        if (mesh.position.z > 1.7 || mesh.position.z < -0.5) velocity.z *= -1;
-      });
+    const tick = () => {
+      if (!dragging) {
+        angularVelocity += (-9.8 / length) * Math.sin(angle) * 0.016;
+        angularVelocity *= 0.992;
+        angle += angularVelocity * 0.016;
+      }
+      const position = new THREE.Vector3(anchor.x + length * Math.sin(angle), anchor.y - length * Math.cos(angle), 0);
+      cardGroup.position.set(position.x, position.y - 1.18, 0);
+      cardGroup.rotation.z = -angle * 0.42;
+      ring.position.copy(anchor);
+      const attachment = cardGroup.localToWorld(new THREE.Vector3(0, 1.74, 0));
+      const curve = new THREE.QuadraticBezierCurve3(anchor, anchor.clone().lerp(attachment, 0.5).add(new THREE.Vector3(0, -0.24 - Math.abs(angularVelocity) * 0.06, 0)), attachment);
+      cordGeometry.setFromPoints(curve.getPoints(18));
       renderer.render(scene, camera);
-    });
-    return () => {
-      canvas.removeEventListener("pointermove", pointer);
-      canvas.removeEventListener("pointerleave", leave);
-      canvas.removeEventListener("click", toggle);
-      observer.disconnect();
-      renderer.setAnimationLoop(null);
-      renderer.dispose();
-      card.geometry.dispose();
-      outline.geometry.dispose();
     };
-  }, []);
+    renderer.setAnimationLoop(tick);
+    return () => {
+      canvas.removeEventListener("pointerdown", down); canvas.removeEventListener("pointermove", move); canvas.removeEventListener("pointerup", up); canvas.removeEventListener("pointercancel", up);
+      observer.disconnect(); renderer.setAnimationLoop(null); texture.dispose(); badge.geometry.dispose(); cordGeometry.dispose(); renderer.dispose();
+    };
+  }, [back, member, profile]);
 
-  return <button type="button" className={`member-identity-card ${showProfile ? "is-profile" : ""}`} onClick={() => setShowProfile((value) => !value)} aria-pressed={showProfile} aria-label="Toggle member card details">
-    <canvas ref={canvasRef} className="member-identity-canvas" />
-    <span className="member-card-content">
-      {!showProfile ? <><small>GOOGLE DEVELOPER GROUPS</small><b>GDG</b><strong>{name}</strong><em>{member.email}</em><i>CLICK TO EXPLORE ↗</i></> : <><small>MEMBER PROFILE</small><b className="member-card-initial">{name.charAt(0).toUpperCase()}</b><strong>{name}</strong><em>{details || "Complete your profile below"}</em><i>{profile.leetCodeUsername ? `LEETCODE · @${profile.leetCodeUsername}` : "CLICK TO RETURN"}</i></>}
-    </span>
-  </button>;
+  return <div className="member-pendulum-card"><canvas ref={canvasRef} className="member-pendulum-canvas" aria-label="Interactive GDG KU membership card. Drag it like a hanging badge or tap to flip." /><p>DRAG THE BADGE · TAP TO FLIP</p></div>;
 }
