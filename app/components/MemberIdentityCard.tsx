@@ -102,7 +102,16 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const { nodes, materials } = useGLTF(CARD_GLB);
-  const texture = useMemo(() => { const canvas = document.createElement("canvas"); canvas.width = canvas.height = 2; const context = canvas.getContext("2d")!; context.fillStyle = "#101d36"; context.fillRect(0, 0, 2, 2); const cleanCord = new THREE.CanvasTexture(canvas); cleanCord.wrapS = cleanCord.wrapT = THREE.RepeatWrapping; return cleanCord; }, []);
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas"); canvas.width = 96; canvas.height = 320;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#0a1328"; context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#172a50"; context.fillRect(8, 0, 80, canvas.height);
+    context.fillStyle = "#f6c343"; context.fillRect(12, 0, 4, canvas.height); context.fillRect(80, 0, 4, canvas.height);
+    context.strokeStyle = "#ffffff33"; context.lineWidth = 2;
+    for (let y = 20; y < canvas.height; y += 54) { context.beginPath(); context.moveTo(26, y); context.lineTo(70, y + 20); context.stroke(); }
+    const strap = new THREE.CanvasTexture(canvas); strap.colorSpace = THREE.SRGBColorSpace; strap.wrapS = strap.wrapT = THREE.RepeatWrapping; strap.repeat.set(1, 4); return strap;
+  }, []);
   const frontTex = useTexture(frontImage || BLANK_PIXEL), backTex = useTexture(backImage || BLANK_PIXEL);
   const cardMap = useMemo(() => {
     const baseMap = materials.base.map; if (!baseMap?.image) return baseMap;
@@ -124,7 +133,7 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
   curve.curveType = "chordal"; texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   const props = { type: "dynamic", canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
   return <>
-    <group position={[0, 5.25, 0]}>
+    <group position={[0, 4.15, 0]}>
       <RigidBody ref={fixed} {...props} type="fixed" />
       <RigidBody position={[0, -.85, 0]} ref={j1} {...props}><BallCollider args={[.1]} /></RigidBody>
       <RigidBody position={[0, -1.7, 0]} ref={j2} {...props}><BallCollider args={[.1]} /></RigidBody>
@@ -140,7 +149,7 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
     </group>
     <mesh ref={band}>
       <meshLineGeometry />
-      <meshLineMaterial color="#111827" depthTest resolution={[1000, 1000]} lineWidth={.22} transparent opacity={.9} />
+      <meshLineMaterial map={texture} useMap={1} color="#ffffff" depthTest resolution={[1000, 1000]} lineWidth={.48} transparent opacity={1} />
     </mesh>
   </>;
 }
