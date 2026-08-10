@@ -16,11 +16,15 @@
     "phone:qr": "node scripts/generate-phone-qr.mjs"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.8",
+    "@react-three/fiber": "^9.7.0",
+    "@react-three/rapier": "^2.2.0",
     "@types/three": "^0.185.3",
     "@zxing/browser": "^0.2.1",
     "drizzle-orm": "0.45.2",
     "firebase": "^12.17.1",
     "gsap": "^3.15.0",
+    "meshline": "^3.3.1",
     "next": "16.2.6",
     "qrcode": "^1.5.4",
     "react": "19.2.6",
