@@ -99,7 +99,7 @@ function Lanyard({ frontImage, backImage }: { frontImage: string; backImage: str
 }
 
 function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontImage: string; backImage: string }) {
-  const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
+  const leftBand = useRef(), rightBand = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const { nodes, materials } = useGLTF(CARD_GLB);
   const texture = useMemo(() => {
@@ -121,7 +121,8 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
     if (frontTex.image) draw(frontTex.image, FRONT_UV_RECT); if (backTex.image) draw(backTex.image, BACK_UV_RECT);
     const composite = new THREE.CanvasTexture(canvas); composite.colorSpace = THREE.SRGBColorSpace; composite.flipY = baseMap.flipY; composite.anisotropy = 16; composite.needsUpdate = true; return composite;
   }, [frontTex, backTex, materials.base.map]);
-  const [curve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
+  const [leftCurve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
+  const [rightCurve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
   const [dragged, drag] = useState<THREE.Vector3 | false>(false);
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]); useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]); useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]); useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.5, 0]]);
   useFrame((state, delta) => {
@@ -132,20 +133,25 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
       if (position) card.current?.setLinvel({ x: (vec.x - dragged.x - position.x) * 14, y: (vec.y - dragged.y - position.y) * 14, z: (vec.z - dragged.z - position.z) * 14 }, true);
     }
     if (!fixed.current || !j1.current || !j2.current || !j3.current || !card.current) return;
-    [j1, j2].forEach((ref) => { if (!ref.current.lerped) ref.current.lerped = new THREE.Vector3().copy(ref.current.translation()); ref.current.lerped.lerp(ref.current.translation(), delta * 18); });
-    curve.points[0].copy(j3.current.translation()); curve.points[1].copy(j2.current.lerped); curve.points[2].copy(j1.current.lerped); curve.points[3].copy(fixed.current.translation()); band.current.geometry.setPoints(curve.getPoints(isMobile ? 16 : 32)); ang.copy(card.current.angvel()); rot.copy(card.current.rotation()); card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * .25, z: ang.z });
+    const cardPosition = card.current.translation();
+    leftCurve.points[0].set(-2.25, 4.29, -.36); leftCurve.points[1].set(-1.85, 2.55, -.3); leftCurve.points[2].set(cardPosition.x - .9, cardPosition.y + 1.45, cardPosition.z - .16); leftCurve.points[3].set(cardPosition.x - .63, cardPosition.y + 1.16, cardPosition.z - .12);
+    rightCurve.points[0].set(2.25, 4.29, -.36); rightCurve.points[1].set(1.85, 2.55, -.3); rightCurve.points[2].set(cardPosition.x + .9, cardPosition.y + 1.45, cardPosition.z - .16); rightCurve.points[3].set(cardPosition.x + .63, cardPosition.y + 1.16, cardPosition.z - .12);
+    leftBand.current?.geometry.setPoints(leftCurve.getPoints(isMobile ? 16 : 32)); rightBand.current?.geometry.setPoints(rightCurve.getPoints(isMobile ? 16 : 32)); ang.copy(card.current.angvel()); rot.copy(card.current.rotation()); card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * .25, z: ang.z });
   });
-  curve.curveType = "chordal"; texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  leftCurve.curveType = rightCurve.curveType = "chordal"; texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   const props = { type: "dynamic", canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
   return <>
     <group position={[0, 4.15, 0]}>
       <RigidBody ref={fixed} {...props} type="fixed" />
-      <group position={[0, .14, -.28]}>
-        <mesh><boxGeometry args={[1.12, .38, .1]} /><meshStandardMaterial color="#09142b" metalness={.38} roughness={.4} /></mesh>
-        <mesh position={[0, .135, .06]}><boxGeometry args={[.86, .035, .018]} /><meshBasicMaterial color="#f6c343" /></mesh>
-        <mesh position={[-.42, -.08, .06]}><circleGeometry args={[.045, 20]} /><meshBasicMaterial color="#f6c343" /></mesh>
-        <mesh position={[.42, -.08, .06]}><circleGeometry args={[.045, 20]} /><meshBasicMaterial color="#f6c343" /></mesh>
-        <mesh position={[0, -.34, .035]}><torusGeometry args={[.15, .035, 10, 28]} /><meshStandardMaterial color="#111827" metalness={.8} roughness={.22} /></mesh>
+      <group position={[-2.25, .14, -.28]}>
+        <mesh><boxGeometry args={[.48, .3, .1]} /><meshStandardMaterial color="#09142b" metalness={.38} roughness={.4} /></mesh>
+        <mesh position={[0, .1, .06]}><boxGeometry args={[.28, .03, .018]} /><meshBasicMaterial color="#f6c343" /></mesh>
+        <mesh position={[0, -.28, .035]}><torusGeometry args={[.11, .028, 10, 24]} /><meshStandardMaterial color="#111827" metalness={.8} roughness={.22} /></mesh>
+      </group>
+      <group position={[2.25, .14, -.28]}>
+        <mesh><boxGeometry args={[.48, .3, .1]} /><meshStandardMaterial color="#09142b" metalness={.38} roughness={.4} /></mesh>
+        <mesh position={[0, .1, .06]}><boxGeometry args={[.28, .03, .018]} /><meshBasicMaterial color="#f6c343" /></mesh>
+        <mesh position={[0, -.28, .035]}><torusGeometry args={[.11, .028, 10, 24]} /><meshStandardMaterial color="#111827" metalness={.8} roughness={.22} /></mesh>
       </group>
       <RigidBody position={[0, -.85, 0]} ref={j1} {...props}><BallCollider args={[.1]} /></RigidBody>
       <RigidBody position={[0, -1.7, 0]} ref={j2} {...props}><BallCollider args={[.1]} /></RigidBody>
@@ -159,9 +165,13 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
         </group>
       </RigidBody>
     </group>
-    <mesh ref={band}>
+    <mesh ref={leftBand}>
       <meshLineGeometry />
-      <meshLineMaterial map={texture} useMap={1} color="#ffffff" depthTest resolution={[1000, 1000]} lineWidth={.48} transparent opacity={1} />
+      <meshLineMaterial map={texture} useMap={1} color="#ffffff" depthTest resolution={[1000, 1000]} lineWidth={.42} transparent opacity={1} />
+    </mesh>
+    <mesh ref={rightBand}>
+      <meshLineGeometry />
+      <meshLineMaterial map={texture} useMap={1} color="#ffffff" depthTest resolution={[1000, 1000]} lineWidth={.42} transparent opacity={1} />
     </mesh>
   </>;
 }
