@@ -125,7 +125,12 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
   const [dragged, drag] = useState<THREE.Vector3 | false>(false);
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]); useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]); useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]); useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.5, 0]]);
   useFrame((state, delta) => {
-    if (dragged) { vec.set(state.pointer.x, state.pointer.y, .5).unproject(state.camera); dir.copy(vec).sub(state.camera.position).normalize(); vec.add(dir.multiplyScalar(state.camera.position.length())); [card, j1, j2, j3, fixed].forEach((ref) => ref.current?.wakeUp()); card.current?.setNextKinematicTranslation({ x: vec.x - dragged.x, y: vec.y - dragged.y, z: vec.z - dragged.z }); }
+    if (dragged) {
+      vec.set(state.pointer.x, state.pointer.y, .5).unproject(state.camera); dir.copy(vec).sub(state.camera.position).normalize(); vec.add(dir.multiplyScalar(state.camera.position.length()));
+      [card, j1, j2, j3].forEach((ref) => ref.current?.wakeUp());
+      const position = card.current?.translation();
+      if (position) card.current?.setLinvel({ x: (vec.x - dragged.x - position.x) * 14, y: (vec.y - dragged.y - position.y) * 14, z: (vec.z - dragged.z - position.z) * 14 }, true);
+    }
     if (!fixed.current || !j1.current || !j2.current || !j3.current || !card.current) return;
     [j1, j2].forEach((ref) => { if (!ref.current.lerped) ref.current.lerped = new THREE.Vector3().copy(ref.current.translation()); ref.current.lerped.lerp(ref.current.translation(), delta * 18); });
     curve.points[0].copy(j3.current.translation()); curve.points[1].copy(j2.current.lerped); curve.points[2].copy(j1.current.lerped); curve.points[3].copy(fixed.current.translation()); band.current.geometry.setPoints(curve.getPoints(isMobile ? 16 : 32)); ang.copy(card.current.angvel()); rot.copy(card.current.rotation()); card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * .25, z: ang.z });
@@ -145,7 +150,7 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
       <RigidBody position={[0, -.85, 0]} ref={j1} {...props}><BallCollider args={[.1]} /></RigidBody>
       <RigidBody position={[0, -1.7, 0]} ref={j2} {...props}><BallCollider args={[.1]} /></RigidBody>
       <RigidBody position={[0, -2.55, 0]} ref={j3} {...props}><BallCollider args={[.1]} /></RigidBody>
-      <RigidBody position={[0, -3.42, 0]} ref={card} {...props} type={dragged ? "kinematicPosition" : "dynamic"}>
+      <RigidBody position={[0, -3.42, 0]} ref={card} {...props}>
         <CuboidCollider args={[.8, 1.125, .01]} />
         <group scale={isMobile ? 2.85 : 3.25} position={[0, -1.2, .2]} onPointerDown={(event) => { event.stopPropagation(); event.target.setPointerCapture(event.pointerId); drag(new THREE.Vector3().copy(event.point).sub(vec.copy(card.current.translation()))); }} onPointerUp={(event) => { event.target.releasePointerCapture(event.pointerId); drag(false); }}>
           <mesh geometry={nodes.card.geometry}><meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={.15} roughness={.82} metalness={.28} /></mesh>
