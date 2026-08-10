@@ -7,6 +7,7 @@ import { blankProfile, loadProfile, MemberProfile as Profile, saveProfile } from
 export function MemberProfile({ member, onProfileChange }: { member: GdgMember; onProfileChange?: (profile: Profile) => void }) {
   const [profile, setProfile] = useState<Profile>(blankProfile);
   const [status, setStatus] = useState("Loading your profile...");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -26,12 +27,18 @@ export function MemberProfile({ member, onProfileChange }: { member: GdgMember; 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
+      setSaving(true);
       setStatus("Saving...");
-      await saveProfile(member.uid, member.email, profile);
+      await Promise.race([
+        saveProfile(member.uid, member.email, profile),
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("timeout")), 10000)),
+      ]);
       onProfileChange?.(profile);
       setStatus("Profile saved. Your details stay attached to this member account.");
     } catch {
-      setStatus("Profile could not be saved yet. Finish the Firestore setup below.");
+      setStatus("Could not reach Firestore. Create Firestore Database and publish its rules, then try again.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -44,7 +51,7 @@ export function MemberProfile({ member, onProfileChange }: { member: GdgMember; 
       <label>LeetCode username<input value={profile.leetCodeUsername} onChange={(event) => update("leetCodeUsername", event.target.value.replace(/^@/, ""))} placeholder="e.g. jayhawk_builder" maxLength={60} /></label>
       <label className="member-profile-wide">Interests (comma-separated)<input value={profile.interests} onChange={(event) => update("interests", event.target.value)} placeholder="AI, web development, interview prep" maxLength={160} /></label>
       {profile.leetCodeUsername && <a className="member-leetcode-link" href={`https://leetcode.com/u/${encodeURIComponent(profile.leetCodeUsername)}/`} target="_blank" rel="noreferrer">Open @{profile.leetCodeUsername} on LeetCode ↗</a>}
-      <div className="member-profile-action"><span>{status}</span><button type="submit">Save profile</button></div>
+      <div className="member-profile-action"><span role="status">{status}</span><button type="submit" disabled={saving}>{saving ? "Saving…" : "Save profile"}</button></div>
     </form>
   </section>;
 }
