@@ -37,7 +37,6 @@ function cardFace(member: GdgMember, profile: MemberProfile, side: "front" | "ba
   canvas.height = 1440;
   const ctx = canvas.getContext("2d")!;
   const name = profile.displayName || "GDG Member";
-  const initials = name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "G";
   const dots = ["#4285f4", "#ea4335", "#fbbc04", "#34a853"];
 
   ctx.fillStyle = "#f7f4ed";
@@ -56,11 +55,10 @@ function cardFace(member: GdgMember, profile: MemberProfile, side: "front" | "ba
     ctx.fillText("GDG ON CAMPUS · KU", 92, 128);
     ctx.letterSpacing = "0px";
     dots.forEach((color, index) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(820 + index * 48, 112, 19, 0, Math.PI * 2); ctx.fill(); });
-    const gradient = ctx.createLinearGradient(100, 230, 510, 690);
-    gradient.addColorStop(0, "#4285f4"); gradient.addColorStop(.45, "#0051ba"); gradient.addColorStop(1, "#0e1f45");
-    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(540, 470, 214, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#f6c343"; ctx.lineWidth = 12; ctx.beginPath(); ctx.arc(540, 470, 235, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = "#fff"; ctx.font = "800 205px Arial"; ctx.textAlign = "center"; ctx.fillText(initials, 540, 540); ctx.textAlign = "left";
+    ctx.fillStyle = "#e8f0fe"; ctx.fillRect(92, 220, 896, 375);
+    ctx.fillStyle = "#0051ba"; ctx.font = "800 194px Arial"; ctx.textAlign = "center"; ctx.fillText("GDG", 540, 425); ctx.textAlign = "left";
+    ctx.strokeStyle = "#f6c343"; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(351, 485); ctx.lineTo(729, 485); ctx.stroke();
+    ctx.fillStyle = "#0e1f45"; ctx.font = "800 24px Arial"; ctx.textAlign = "center"; ctx.letterSpacing = "5px"; ctx.fillText("GOOGLE DEVELOPER GROUPS", 540, 540); ctx.textAlign = "left"; ctx.letterSpacing = "0px";
     ctx.fillStyle = "#0e1f45"; ctx.font = `400 ${fitText(ctx, name, 850, 86)}px Georgia`; ctx.fillText(name, 96, 830);
     ctx.fillStyle = "#34405d"; ctx.font = "700 28px Arial"; ctx.fillText(profile.major || "GDG KU member", 98, 885);
     ctx.strokeStyle = "#0e1f452b"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(96, 952); ctx.lineTo(986, 952); ctx.stroke();
@@ -93,7 +91,7 @@ function cardFace(member: GdgMember, profile: MemberProfile, side: "front" | "ba
 function Lanyard({ frontImage, backImage }: { frontImage: string; backImage: string }) {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => { const update = () => setIsMobile(window.innerWidth < 720); update(); window.addEventListener("resize", update); return () => window.removeEventListener("resize", update); }, []);
-  return <div className="member-lanyard-stage"><Canvas camera={{ position: [0, 0, isMobile ? 26 : 24], fov: isMobile ? 25 : 20 }} dpr={[1, isMobile ? 1.25 : 1.75]} gl={{ alpha: true }} onCreated={({ gl }) => gl.setClearColor(new THREE.Color(0x000000), 0)}>
+  return <div className="member-lanyard-stage"><Canvas camera={{ position: [0, 0, isMobile ? 21 : 19], fov: isMobile ? 25 : 20 }} dpr={[1, isMobile ? 1.25 : 1.75]} gl={{ alpha: true }} onCreated={({ gl }) => gl.setClearColor(new THREE.Color(0x000000), 0)}>
     <ambientLight intensity={Math.PI} />
     <Physics gravity={[0, -40, 0]} timeStep={isMobile ? 1 / 30 : 1 / 60}><Band isMobile={isMobile} frontImage={frontImage} backImage={backImage} /></Physics>
     <Environment blur={0.8}><Lightformer intensity={3} color="#ffffff" position={[0, -1, 5]} rotation={[0, 0, Math.PI / 3]} scale={[100, .1, 1]} /><Lightformer intensity={4} color="#dce8ff" position={[-10, 0, 14]} rotation={[0, Math.PI / 2, Math.PI / 3]} scale={[100, 10, 1]} /></Environment>
@@ -125,11 +123,13 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
   });
   curve.curveType = "chordal"; texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   const props = { type: "dynamic", canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
-  return <><group position={[0, 4, 0]}><RigidBody ref={fixed} {...props} type="fixed" /><RigidBody position={[.5, 0, 0]} ref={j1} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[1, 0, 0]} ref={j2} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[1.5, 0, 0]} ref={j3} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[2, 0, 0]} ref={card} {...props} type={dragged ? "kinematicPosition" : "dynamic"}><CuboidCollider args={[.8, 1.125, .01]} /><group scale={2.25} position={[0, -1.2, -.05]} onPointerDown={(event) => { event.stopPropagation(); event.target.setPointerCapture(event.pointerId); drag(new THREE.Vector3().copy(event.point).sub(vec.copy(card.current.translation()))); }} onPointerUp={(event) => { event.target.releasePointerCapture(event.pointerId); drag(false); }}><mesh geometry={nodes.card.geometry}><meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={.15} roughness={.82} metalness={.28} /></mesh><mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={.3} /><mesh geometry={nodes.clamp.geometry} material={materials.metal} /></group></RigidBody></group><mesh ref={band}><meshLineGeometry /><meshLineMaterial color="white" depthTest={false} resolution={[1000, 1000]} useMap map={texture} repeat={[-4, 1]} lineWidth={1} /></mesh></>;
+  return <><group position={[0, 4, 0]}><RigidBody ref={fixed} {...props} type="fixed" /><RigidBody position={[.5, 0, 0]} ref={j1} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[1, 0, 0]} ref={j2} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[1.5, 0, 0]} ref={j3} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[2, 0, 0]} ref={card} {...props} type={dragged ? "kinematicPosition" : "dynamic"}><CuboidCollider args={[.8, 1.125, .01]} /><group scale={isMobile ? 2.85 : 3.25} position={[0, -1.2, -.05]} onPointerDown={(event) => { event.stopPropagation(); event.target.setPointerCapture(event.pointerId); drag(new THREE.Vector3().copy(event.point).sub(vec.copy(card.current.translation()))); }} onPointerUp={(event) => { event.target.releasePointerCapture(event.pointerId); drag(false); }}><mesh geometry={nodes.card.geometry}><meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={.15} roughness={.82} metalness={.28} /></mesh><mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={.3} /><mesh geometry={nodes.clamp.geometry} material={materials.metal} /></group></RigidBody></group><mesh ref={band}><meshLineGeometry /><meshLineMaterial color="white" depthTest={false} resolution={[1000, 1000]} useMap map={texture} repeat={[-4, 1]} lineWidth={1} /></mesh></>;
 }
 
 export function MemberIdentityCard({ member, profile }: Props) {
   const frontImage = useMemo(() => cardFace(member, profile, "front"), [member, profile]);
   const backImage = useMemo(() => cardFace(member, profile, "back"), [member, profile]);
-  return <div className="member-lanyard"><Lanyard frontImage={frontImage} backImage={backImage} /><p>DRAG THE PASS TO EXPLORE YOUR MEMBER ID</p></div>;
+  const [open, setOpen] = useState(false);
+  const name = profile.displayName || "GDG Member";
+  return <><div className="member-lanyard"><Lanyard frontImage={frontImage} backImage={backImage} /><div className="member-lanyard-actions"><span>DRAG THE PASS TO EXPLORE</span><button type="button" onClick={() => setOpen(true)}>View full pass ↗</button></div></div>{open && <div className="member-pass-modal" role="dialog" aria-modal="true" aria-label="Full GDG KU member pass" onClick={() => setOpen(false)}><section onClick={(event) => event.stopPropagation()}><button onClick={() => setOpen(false)} aria-label="Close full member pass">×</button><div className="member-pass-full"><p>GDG ON CAMPUS · KU</p><strong>GDG</strong><i>GOOGLE DEVELOPER GROUPS</i><h2>{name}</h2><span>{profile.major || "GDG KU member"}</span><hr /><dl><div><dt>Graduation</dt><dd>{profile.graduationYear ? `Class of ${profile.graduationYear}` : "To be set"}</dd></div><div><dt>LeetCode</dt><dd>{profile.leetCodeUsername ? `@${profile.leetCodeUsername}` : "Not connected"}</dd></div></dl><footer><b>● VERIFIED MEMBER</b><em>BUILD · LEARN · CONNECT</em></footer></div></section></div>}</>;
 }
