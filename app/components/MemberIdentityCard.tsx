@@ -32,7 +32,7 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, 
   return size;
 }
 
-function cardFace(member: GdgMember, profile: MemberProfile, side: "front" | "back") {
+function cardFace(member: GdgMember, profile: MemberProfile, side: "front" | "back", jayhawk: HTMLImageElement | null = null) {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
   canvas.height = 1440;
@@ -57,9 +57,8 @@ function cardFace(member: GdgMember, profile: MemberProfile, side: "front" | "ba
     ctx.letterSpacing = "0px";
     dots.forEach((color, index) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(820 + index * 48, 112, 19, 0, Math.PI * 2); ctx.fill(); });
     ctx.fillStyle = "#e8f0fe"; ctx.fillRect(92, 220, 896, 375);
-    ctx.lineCap = "round"; ctx.lineWidth = 60;
-    [["#4285f4", 265, 475, 430, 375], ["#ea4335", 430, 375, 550, 305], ["#fbbc04", 510, 515, 675, 415], ["#34a853", 675, 415, 800, 345]].forEach(([color, x1, y1, x2, y2]) => { ctx.strokeStyle = color as string; ctx.beginPath(); ctx.moveTo(x1 as number, y1 as number); ctx.lineTo(x2 as number, y2 as number); ctx.stroke(); });
-    ctx.fillStyle = "#0e1f45"; ctx.font = "800 28px Arial"; ctx.textAlign = "center"; ctx.fillText("KU BUILDER ACCESS", 540, 525); ctx.font = "700 18px Arial"; ctx.fillStyle = "#53617a"; ctx.fillText("GOOGLE DEVELOPER GROUPS ON CAMPUS", 540, 560); ctx.textAlign = "left";
+    if (jayhawk) { ctx.save(); ctx.globalCompositeOperation = "multiply"; ctx.drawImage(jayhawk, 300, 196, 480, 288); ctx.restore(); }
+    ctx.fillStyle = "#0e1f45"; ctx.font = "800 22px Arial"; ctx.textAlign = "center"; ctx.fillText("UNIVERSITY OF KANSAS · LAWRENCE", 540, 525); ctx.font = "700 17px Arial"; ctx.fillStyle = "#53617a"; ctx.fillText("GOOGLE DEVELOPER GROUPS ON CAMPUS", 540, 558); ctx.textAlign = "left";
     ctx.fillStyle = "#0e1f45"; ctx.font = `400 ${fitText(ctx, name, 850, 86)}px Georgia`; ctx.fillText(name, 96, 830);
     ctx.fillStyle = "#34405d"; ctx.font = "700 28px Arial"; ctx.fillText(profile.major || "GDG KU member", 98, 885);
     ctx.strokeStyle = "#0e1f452b"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(96, 952); ctx.lineTo(986, 952); ctx.stroke();
@@ -103,7 +102,7 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
   const band = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const { nodes, materials } = useGLTF(CARD_GLB);
-  const texture = useTexture(LANYARD_TEXTURE);
+  const texture = useMemo(() => { const canvas = document.createElement("canvas"); canvas.width = canvas.height = 2; const context = canvas.getContext("2d")!; context.fillStyle = "#101d36"; context.fillRect(0, 0, 2, 2); const cleanCord = new THREE.CanvasTexture(canvas); cleanCord.wrapS = cleanCord.wrapT = THREE.RepeatWrapping; return cleanCord; }, []);
   const frontTex = useTexture(frontImage || BLANK_PIXEL), backTex = useTexture(backImage || BLANK_PIXEL);
   const cardMap = useMemo(() => {
     const baseMap = materials.base.map; if (!baseMap?.image) return baseMap;
@@ -128,10 +127,12 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
 }
 
 export function MemberIdentityCard({ member, profile }: Props) {
-  const frontImage = useMemo(() => cardFace(member, profile, "front"), [member, profile]);
+  const [jayhawk, setJayhawk] = useState<HTMLImageElement | null>(null);
+  useEffect(() => { const logo = new Image(); logo.onload = () => setJayhawk(logo); logo.src = "/assets/ku-jayhawk.png"; }, []);
+  const frontImage = useMemo(() => cardFace(member, profile, "front", jayhawk), [member, profile, jayhawk]);
   const backImage = useMemo(() => cardFace(member, profile, "back"), [member, profile]);
   const [open, setOpen] = useState(false);
   const name = profile.displayName || "GDG Member";
-  const viewer = <div className="member-pass-modal" role="dialog" aria-modal="true" aria-label="Full GDG KU member pass" onClick={() => setOpen(false)}><section onClick={(event) => event.stopPropagation()}><button onClick={() => setOpen(false)} aria-label="Close full member pass">×</button><div className="member-pass-full"><p>GDG ON CAMPUS · KU</p><div className="member-pass-symbol" aria-label="Google Developer Groups mark"><i /><i /><i /><i /></div><i>KU BUILDER ACCESS</i><h2>{name}</h2><span>{profile.major || "GDG KU member"}</span><hr /><dl><div><dt>Graduation</dt><dd>{profile.graduationYear ? `Class of ${profile.graduationYear}` : "To be set"}</dd></div><div><dt>LeetCode</dt><dd>{profile.leetCodeUsername ? `@${profile.leetCodeUsername}` : "Not connected"}</dd></div></dl><footer><b>● VERIFIED MEMBER</b><em>BUILD · LEARN · CONNECT</em></footer></div></section></div>;
+  const viewer = <div className="member-pass-modal" role="dialog" aria-modal="true" aria-label="Full GDG KU member pass" onClick={() => setOpen(false)}><section onClick={(event) => event.stopPropagation()}><button onClick={() => setOpen(false)} aria-label="Close full member pass">×</button><div className="member-pass-full"><p>GDG ON CAMPUS · KU</p><img className="member-pass-jayhawk" src="/assets/ku-jayhawk.png" alt="University of Kansas Jayhawk" /><i>GOOGLE DEVELOPER GROUPS ON CAMPUS</i><h2>{name}</h2><span>{profile.major || "GDG KU member"}</span><hr /><dl><div><dt>Graduation</dt><dd>{profile.graduationYear ? `Class of ${profile.graduationYear}` : "To be set"}</dd></div><div><dt>LeetCode</dt><dd>{profile.leetCodeUsername ? `@${profile.leetCodeUsername}` : "Not connected"}</dd></div></dl><footer><b>● VERIFIED MEMBER</b><em>BUILD · LEARN · CONNECT</em></footer></div></section></div>;
   return <><div className="member-lanyard"><Lanyard frontImage={frontImage} backImage={backImage} /><div className="member-lanyard-actions"><span>DRAG THE PASS TO EXPLORE</span><button type="button" onClick={() => setOpen(true)}>View full pass ↗</button></div></div>{open && createPortal(viewer, document.body)}</>;
 }
