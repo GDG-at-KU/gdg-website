@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { PwaRegister } from "./components/PwaRegister";
+import { GdgCursor } from "./components/GdgCursor";
 
 export const metadata: Metadata = {
   title: "GDG on Campus KU | Build what's next",
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><head><link rel="manifest" href="/manifest.webmanifest" /><link rel="stylesheet" href="/member.css" /><meta name="theme-color" content="#0051ba" /></head><body>{children}<PwaRegister /></body></html>;
+  return <html lang="en"><head><link rel="manifest" href="/manifest.webmanifest" /><link rel="stylesheet" href="/member.css" /><meta name="theme-color" content="#0051ba" /></head><body>{children}<PwaRegister /><GdgCursor /></body></html>;
 }
