@@ -123,7 +123,26 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
   });
   curve.curveType = "chordal"; texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   const props = { type: "dynamic", canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
-  return <><group position={[0, 4, 0]}><RigidBody ref={fixed} {...props} type="fixed" /><RigidBody position={[.5, 0, 0]} ref={j1} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[1, 0, 0]} ref={j2} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[1.5, 0, 0]} ref={j3} {...props}><BallCollider args={[.1]} /></RigidBody><RigidBody position={[2, 0, 0]} ref={card} {...props} type={dragged ? "kinematicPosition" : "dynamic"}><CuboidCollider args={[.8, 1.125, .01]} /><group scale={isMobile ? 2.85 : 3.25} position={[0, -1.2, -.05]} onPointerDown={(event) => { event.stopPropagation(); event.target.setPointerCapture(event.pointerId); drag(new THREE.Vector3().copy(event.point).sub(vec.copy(card.current.translation()))); }} onPointerUp={(event) => { event.target.releasePointerCapture(event.pointerId); drag(false); }}><mesh geometry={nodes.card.geometry}><meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={.15} roughness={.82} metalness={.28} /></mesh><mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={.3} /><mesh geometry={nodes.clamp.geometry} material={materials.metal} /></group></RigidBody></group><mesh ref={band}><meshLineGeometry /><meshLineMaterial color="white" depthTest={false} resolution={[1000, 1000]} useMap map={texture} repeat={[-4, 1]} lineWidth={1} /></mesh></>;
+  return <>
+    <group position={[0, 5.25, 0]}>
+      <RigidBody ref={fixed} {...props} type="fixed" />
+      <RigidBody position={[.5, 0, 0]} ref={j1} {...props}><BallCollider args={[.1]} /></RigidBody>
+      <RigidBody position={[1, 0, 0]} ref={j2} {...props}><BallCollider args={[.1]} /></RigidBody>
+      <RigidBody position={[1.5, 0, 0]} ref={j3} {...props}><BallCollider args={[.1]} /></RigidBody>
+      <RigidBody position={[2, 0, 0]} ref={card} {...props} type={dragged ? "kinematicPosition" : "dynamic"}>
+        <CuboidCollider args={[.8, 1.125, .01]} />
+        <group scale={isMobile ? 2.85 : 3.25} position={[0, -1.2, -.05]} onPointerDown={(event) => { event.stopPropagation(); event.target.setPointerCapture(event.pointerId); drag(new THREE.Vector3().copy(event.point).sub(vec.copy(card.current.translation()))); }} onPointerUp={(event) => { event.target.releasePointerCapture(event.pointerId); drag(false); }}>
+          <mesh geometry={nodes.card.geometry}><meshPhysicalMaterial map={cardMap} map-anisotropy={16} clearcoat={isMobile ? 0 : 1} clearcoatRoughness={.15} roughness={.82} metalness={.28} /></mesh>
+          <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={.3} />
+          <mesh geometry={nodes.clamp.geometry} material={materials.metal} />
+        </group>
+      </RigidBody>
+    </group>
+    <mesh ref={band}>
+      <meshLineGeometry />
+      <meshLineMaterial color="#dbe7ff" depthTest={false} resolution={[1000, 1000]} lineWidth={.28} transparent opacity={.92} />
+    </mesh>
+  </>;
 }
 
 export function MemberIdentityCard({ member, profile }: Props) {
