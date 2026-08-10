@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import type { GdgMember } from "./MemberAuth";
 import { blankProfile, loadProfile, MemberProfile as Profile, saveProfile } from "../lib/memberData";
 
-export function MemberProfile({ member }: { member: GdgMember }) {
+export function MemberProfile({ member, onProfileChange }: { member: GdgMember; onProfileChange?: (profile: Profile) => void }) {
   const [profile, setProfile] = useState<Profile>(blankProfile);
   const [status, setStatus] = useState("Loading your profile...");
 
@@ -13,6 +13,7 @@ export function MemberProfile({ member }: { member: GdgMember }) {
     void loadProfile(member.uid).then((saved) => {
       if (!active) return;
       setProfile(saved);
+      onProfileChange?.(saved);
       setStatus(saved.displayName || saved.leetCodeUsername ? "Profile saved to your member account." : "Complete your profile to join the member directory.");
     }).catch(() => active && setStatus("Enable Firestore to save your profile."));
     return () => { active = false; };
@@ -27,6 +28,7 @@ export function MemberProfile({ member }: { member: GdgMember }) {
     try {
       setStatus("Saving...");
       await saveProfile(member.uid, member.email, profile);
+      onProfileChange?.(profile);
       setStatus("Profile saved. Your details stay attached to this member account.");
     } catch {
       setStatus("Profile could not be saved yet. Finish the Firestore setup below.");
