@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Canvas, extend, useFrame } from "@react-three/fiber";
 import { Environment, Lightformer, useGLTF, useTexture } from "@react-three/drei";
 import { BallCollider, CuboidCollider, Physics, RigidBody, useRopeJoint, useSphericalJoint } from "@react-three/rapier";
@@ -131,5 +132,6 @@ export function MemberIdentityCard({ member, profile }: Props) {
   const backImage = useMemo(() => cardFace(member, profile, "back"), [member, profile]);
   const [open, setOpen] = useState(false);
   const name = profile.displayName || "GDG Member";
-  return <><div className="member-lanyard"><Lanyard frontImage={frontImage} backImage={backImage} /><div className="member-lanyard-actions"><span>DRAG THE PASS TO EXPLORE</span><button type="button" onClick={() => setOpen(true)}>View full pass ↗</button></div></div>{open && <div className="member-pass-modal" role="dialog" aria-modal="true" aria-label="Full GDG KU member pass" onClick={() => setOpen(false)}><section onClick={(event) => event.stopPropagation()}><button onClick={() => setOpen(false)} aria-label="Close full member pass">×</button><div className="member-pass-full"><p>GDG ON CAMPUS · KU</p><strong>GDG</strong><i>GOOGLE DEVELOPER GROUPS</i><h2>{name}</h2><span>{profile.major || "GDG KU member"}</span><hr /><dl><div><dt>Graduation</dt><dd>{profile.graduationYear ? `Class of ${profile.graduationYear}` : "To be set"}</dd></div><div><dt>LeetCode</dt><dd>{profile.leetCodeUsername ? `@${profile.leetCodeUsername}` : "Not connected"}</dd></div></dl><footer><b>● VERIFIED MEMBER</b><em>BUILD · LEARN · CONNECT</em></footer></div></section></div>}</>;
+  const viewer = <div className="member-pass-modal" role="dialog" aria-modal="true" aria-label="Full GDG KU member pass" onClick={() => setOpen(false)}><section onClick={(event) => event.stopPropagation()}><button onClick={() => setOpen(false)} aria-label="Close full member pass">×</button><div className="member-pass-full"><p>GDG ON CAMPUS · KU</p><strong>GDG</strong><i>GOOGLE DEVELOPER GROUPS</i><h2>{name}</h2><span>{profile.major || "GDG KU member"}</span><hr /><dl><div><dt>Graduation</dt><dd>{profile.graduationYear ? `Class of ${profile.graduationYear}` : "To be set"}</dd></div><div><dt>LeetCode</dt><dd>{profile.leetCodeUsername ? `@${profile.leetCodeUsername}` : "Not connected"}</dd></div></dl><footer><b>● VERIFIED MEMBER</b><em>BUILD · LEARN · CONNECT</em></footer></div></section></div>;
+  return <><div className="member-lanyard"><Lanyard frontImage={frontImage} backImage={backImage} /><div className="member-lanyard-actions"><span>DRAG THE PASS TO EXPLORE</span><button type="button" onClick={() => setOpen(true)}>View full pass ↗</button></div></div>{open && createPortal(viewer, document.body)}</>;
 }
