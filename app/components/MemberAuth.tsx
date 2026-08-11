@@ -20,14 +20,36 @@ export function MemberAuth({ children }: Props) {
 
   useEffect(() => {
     if (!memberAuth) { setLoading(false); return; }
-    void persistMemberSession();
-    setIsEmailLink(isSignInWithEmailLink(memberAuth, window.location.href));
+    let cancelled = false;
+    const emailLink = isSignInWithEmailLink(memberAuth, window.location.href);
+    setIsEmailLink(emailLink);
     const unsubscribe = onAuthStateChanged(memberAuth, (user) => {
       const verifiedEmail = user?.email?.toLowerCase();
       setMember(user && verifiedEmail?.endsWith(TEST_EMAIL_DOMAIN) ? { uid: user.uid, email: verifiedEmail } : null);
       setLoading(false);
     });
-    return unsubscribe;
+
+    async function restoreOrCompleteSession() {
+      await persistMemberSession();
+      if (!emailLink) return;
+
+      const savedEmail = window.localStorage.getItem(EMAIL_KEY)?.toLowerCase();
+      if (!savedEmail) return;
+
+      setEmail(savedEmail);
+      setMessage("Finishing your secure sign-in...");
+      try {
+        await signInWithEmailLink(memberAuth!, savedEmail, window.location.href);
+        window.localStorage.removeItem(EMAIL_KEY);
+        window.history.replaceState({}, document.title, "/member");
+        if (!cancelled) setMessage("Your Gmail address is verified. Welcome to GDG KU.");
+      } catch {
+        if (!cancelled) setMessage("That sign-in link could not be completed. Enter your Gmail address below to verify it.");
+      }
+    }
+
+    void restoreOrCompleteSession();
+    return () => { cancelled = true; unsubscribe(); };
   }, []);
 
   async function submitEmail(event: FormEvent<HTMLFormElement>) {
