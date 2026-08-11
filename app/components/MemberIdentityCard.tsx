@@ -99,7 +99,7 @@ function Lanyard({ frontImage, backImage }: { frontImage: string; backImage: str
 }
 
 function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontImage: string; backImage: string }) {
-  const leftBand = useRef(), rightBand = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
+  const leftBand = useRef(), rightBand = useRef(), leftStitch = useRef(), rightStitch = useRef(), fixed = useRef(), j1 = useRef(), j2 = useRef(), j3 = useRef(), card = useRef();
   const vec = new THREE.Vector3(), ang = new THREE.Vector3(), rot = new THREE.Vector3(), dir = new THREE.Vector3();
   const { nodes, materials } = useGLTF(CARD_GLB);
   const texture = useMemo(() => {
@@ -136,7 +136,8 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
     const cardPosition = card.current.translation();
     leftCurve.points[0].set(-2.25, 4.29, -.36); leftCurve.points[1].set(-1.85, 2.55, -.3); leftCurve.points[2].set(cardPosition.x - .9, cardPosition.y + 1.45, cardPosition.z - .16); leftCurve.points[3].set(cardPosition.x - .63, cardPosition.y + 1.16, cardPosition.z - .12);
     rightCurve.points[0].set(2.25, 4.29, -.36); rightCurve.points[1].set(1.85, 2.55, -.3); rightCurve.points[2].set(cardPosition.x + .9, cardPosition.y + 1.45, cardPosition.z - .16); rightCurve.points[3].set(cardPosition.x + .63, cardPosition.y + 1.16, cardPosition.z - .12);
-    leftBand.current?.geometry.setPoints(leftCurve.getPoints(isMobile ? 16 : 32)); rightBand.current?.geometry.setPoints(rightCurve.getPoints(isMobile ? 16 : 32)); ang.copy(card.current.angvel()); rot.copy(card.current.rotation()); card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * .25, z: ang.z });
+    const leftPoints = leftCurve.getPoints(isMobile ? 16 : 32), rightPoints = rightCurve.getPoints(isMobile ? 16 : 32);
+    leftBand.current?.geometry.setPoints(leftPoints); rightBand.current?.geometry.setPoints(rightPoints); leftStitch.current?.geometry.setPoints(leftPoints); rightStitch.current?.geometry.setPoints(rightPoints); ang.copy(card.current.angvel()); rot.copy(card.current.rotation()); card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * .25, z: ang.z });
   });
   leftCurve.curveType = rightCurve.curveType = "chordal"; texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   const props = { type: "dynamic", canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
@@ -172,6 +173,14 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
     <mesh ref={rightBand}>
       <meshLineGeometry />
       <meshLineMaterial map={texture} useMap={1} color="#ffffff" depthTest resolution={[1000, 1000]} lineWidth={.42} transparent opacity={1} />
+    </mesh>
+    <mesh ref={leftStitch}>
+      <meshLineGeometry />
+      <meshLineMaterial color="#f6c343" depthTest resolution={[1000, 1000]} lineWidth={.045} dashArray={.16} dashRatio={.55} useDash={1} transparent opacity={.95} />
+    </mesh>
+    <mesh ref={rightStitch}>
+      <meshLineGeometry />
+      <meshLineMaterial color="#f6c343" depthTest resolution={[1000, 1000]} lineWidth={.045} dashArray={.16} dashRatio={.55} useDash={1} transparent opacity={.95} />
     </mesh>
   </>;
 }
