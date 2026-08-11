@@ -25,3 +25,114 @@
 /* Hero orbit gallery */
 .hero h1{font-size:clamp(54px,6.2vw,88px)}.hero-grid{grid-template-columns:.96fr 1.04fr}.orbit-gallery{position:absolute;inset:0;isolation:isolate;overflow:hidden}.orbit-grid{position:absolute;inset:8% 4%;opacity:.28;background-image:linear-gradient(90deg,#fff 1px,transparent 1px),linear-gradient(#fff 1px,transparent 1px);background-size:50px 50px;mask-image:radial-gradient(circle at center,#000 15%,transparent 68%)}.orbit-ring{position:absolute;left:50%;top:50%;border:1px solid rgba(255,255,255,.5);border-radius:50%;transform:translate(-50%,-50%) rotate(-18deg)}.ring-outer{width:83%;height:67%}.ring-inner{width:55%;height:44%;border-style:dashed}.orbit-center{position:absolute;left:50%;top:50%;width:150px;height:190px;transform:translate(-50%,-50%) rotate(4deg);background:var(--sun);padding:7px;box-shadow:16px 19px 0 rgba(4,36,91,.48);z-index:3}.center-image,.node-image{width:100%;height:100%;background:transparent}.center-image{background-position:100% 100%;filter:saturate(1.12)}.center-caption{position:absolute;left:-18px;bottom:17px;background:#fff;color:var(--ink);padding:7px 10px;min-width:134px;display:flex;justify-content:space-between;align-items:center;font-size:8px;font-weight:900;letter-spacing:.08em}.center-caption b{color:var(--crimson);font-size:19px;letter-spacing:-.08em}.orbit-circuit{position:absolute;inset:0;animation:orbit-turn 26s linear infinite}.orbit-node{position:absolute;width:94px;height:112px;animation:node-float 5.5s ease-in-out infinite;animation-delay:var(--delay);z-index:2}.orbit-node p{font-size:8px;letter-spacing:.09em;font-weight:900;margin:5px 0;color:#fff}.node-image{height:88px;border:2px solid #fff;box-shadow:9px 11px 0 rgba(4,36,91,.5)}.code{background-position:0 0}.cloud{background-position:50% 0}.android{background-position:100% 0}.ai{background-position:0 100%}.mobile{background-position:50% 100%}.campus{background-position:100% 100%}.node-code{left:8%;top:22%}.node-cloud{right:8%;top:15%}.node-android{right:0;top:56%}.node-ai{right:27%;bottom:2%}.node-mobile{left:23%;bottom:1%}.node-campus{left:0;top:58%}.orbit-satellite{position:absolute;right:11%;bottom:14%;width:55px;height:55px;border-radius:50%;background:var(--crimson);border:2px solid #fff;display:grid;place-content:center;text-align:center;font-size:10px;font-weight:900;z-index:4;transform:rotate(-10deg)}.orbit-satellite i{font-style:normal;color:var(--sun);font-size:17px;line-height:.6}.orbit-stamp{position:absolute;left:9%;top:11%;font-size:9px;line-height:1.25;letter-spacing:.12em;font-weight:900;color:var(--sun);border-left:2px solid var(--sun);padding-left:8px}.orbit-label{z-index:5}.star{z-index:6}@keyframes orbit-turn{to{transform:rotate(360deg)}}@keyframes node-float{50%{transform:translateY(-13px) rotate(-3deg)}}
 @media(max-width:760px){.hero-grid{grid-template-columns:1fr}.hero-art{height:330px}.orbit-node{width:65px;height:80px}.node-image{height:60px}.orbit-center{width:112px;height:142px}.orbit-stamp{top:3%;left:5%}.orbit-satellite{right:4%;bottom:2%}}
+
+/* all the google sans fonts */
+@font-face {
+  font-family: "Google Sans";
+  src: url("/fonts/google-sans-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Google Sans";
+  src: url("/fonts/google-sans-medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Google Sans";
+  src: url("/fonts/google-sans-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Google Sans";
+  src: url("/fonts/google-sans-italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Google Sans Text";
+  src: url("/fonts/google-sans-text-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Google Sans Text";
+  src: url("/fonts/google-sans-text-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Google Sans Mono";
+  src: url("/fonts/google-sans-mono-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Google Sans Mono";
+  src: url("/fonts/google-sans-mono-semibold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-display: "Google Sans", Arial, sans-serif;
+  --font-body: "Google Sans Text", Arial, sans-serif;
+  --font-mono: "Google Sans Mono", monospace;
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.hero h1,
+.section h2,
+.join h2,
+.inner-hero h1,
+.inner-list h2,
+.inner-list article > button h2,
+.calendar-title h1,
+.section-menu-link b,
+.event-info h3,
+.track b,
+.team-note p,
+.join-link b {
+  font-family: var(--font-display);
+}
+
+.eyebrow,
+.kicker,
+.section-index,
+.event-date,
+.event-info p,
+.track span,
+.join-link span,
+.hero-footer,
+.orbit-label,
+.hero-mark {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
