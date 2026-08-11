@@ -3,6 +3,7 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink, signOut } from "firebase/auth";
 import { firebaseConfigured, memberAuth, persistMemberSession } from "../lib/firebase";
+import { SectionMenu } from "./SectionMenu";
 
 const EMAIL_KEY = "gdg-ku-email-link";
 const TEST_EMAIL_DOMAIN = "@gmail.com";
@@ -62,6 +63,7 @@ export function MemberAuth({ children }: Props) {
   return <main className={"member-page"}>
     <section className={"member-auth-shell"}>
       <a href="/" className={"member-brand"}>GDG <span /> <em>ON CAMPUS<br />KU</em></a>
+      <SectionMenu />
       <div className={"member-auth-card"}>
         <p className={"member-eyebrow"}>GDG KU MEMBER PASS · GMAIL TEST</p>
         <h1>{isEmailLink ? "Confirm your\nKU email." : "Your pass\nstarts here."}</h1>
