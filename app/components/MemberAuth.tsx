@@ -1,104 +1,74 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useState } from "react";
-import { isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailLink, signOut } from "firebase/auth";
+import { ReactNode, useEffect, useState } from "react";
+import { GoogleAuthProvider, getRedirectResult, onAuthStateChanged, signInWithRedirect, signOut } from "firebase/auth";
 import { firebaseConfigured, memberAuth, persistMemberSession } from "../lib/firebase";
 import { SectionMenu } from "./SectionMenu";
 
-const EMAIL_KEY = "gdg-ku-email-link";
-const TEST_EMAIL_DOMAIN = "@gmail.com";
+const ALLOWED_EMAIL_DOMAINS = ["@gmail.com", "@ku.edu"];
 export type GdgMember = { uid: string; email: string };
 
 type Props = { children: (member: GdgMember) => ReactNode };
 
 export function MemberAuth({ children }: Props) {
   const [member, setMember] = useState<GdgMember | null>(null);
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [isEmailLink, setIsEmailLink] = useState(false);
 
   useEffect(() => {
     if (!memberAuth) { setLoading(false); return; }
-    let cancelled = false;
-    const emailLink = isSignInWithEmailLink(memberAuth, window.location.href);
-    setIsEmailLink(emailLink);
+
     const unsubscribe = onAuthStateChanged(memberAuth, (user) => {
       const verifiedEmail = user?.email?.toLowerCase();
-      setMember(user && verifiedEmail?.endsWith(TEST_EMAIL_DOMAIN) ? { uid: user.uid, email: verifiedEmail } : null);
+      const canJoin = verifiedEmail && ALLOWED_EMAIL_DOMAINS.some((domain) => verifiedEmail.endsWith(domain));
+      setMember(user && canJoin ? { uid: user.uid, email: verifiedEmail } : null);
       setLoading(false);
     });
 
-    async function restoreOrCompleteSession() {
+    async function restoreGoogleSession() {
       await persistMemberSession();
-      if (!emailLink) return;
-
-      const savedEmail = window.localStorage.getItem(EMAIL_KEY)?.toLowerCase();
-      if (!savedEmail) return;
-
-      setEmail(savedEmail);
-      setMessage("Finishing your secure sign-in...");
-      try {
-        await signInWithEmailLink(memberAuth!, savedEmail, window.location.href);
-        window.localStorage.removeItem(EMAIL_KEY);
-        window.history.replaceState({}, document.title, "/member");
-        if (!cancelled) setMessage("Your Gmail address is verified. Welcome to GDG KU.");
-      } catch {
-        if (!cancelled) setMessage("That sign-in link could not be completed. Enter your Gmail address below to verify it.");
-      }
+      await getRedirectResult(memberAuth!).catch(() => {
+        setMessage("Google sign-in could not be completed. Please try again.");
+      });
     }
 
-    void restoreOrCompleteSession();
-    return () => { cancelled = true; unsubscribe(); };
+    void restoreGoogleSession();
+    return unsubscribe;
   }, []);
 
-  async function submitEmail(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function signInWithGoogle() {
     if (!memberAuth) return;
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail.endsWith(TEST_EMAIL_DOMAIN)) { setMessage("For this test, use a Gmail address ending in @gmail.com."); return; }
     try {
-      setMessage("");
+      setMessage("Opening Google sign-in...");
       await persistMemberSession();
-      if (isEmailLink) {
-        await signInWithEmailLink(memberAuth, normalizedEmail, window.location.href);
-        window.localStorage.removeItem(EMAIL_KEY);
-        window.history.replaceState({}, document.title, "/member");
-        setMessage("Your Gmail address is verified. Welcome to GDG KU.");
-        return;
-      }
-      await sendSignInLinkToEmail(memberAuth, normalizedEmail, { url: `${window.location.origin}/member`, handleCodeInApp: true });
-      window.localStorage.setItem(EMAIL_KEY, normalizedEmail);
-      setMessage("Check your Gmail inbox and open the sign-in link on this device.");
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      await signInWithRedirect(memberAuth, provider);
     } catch {
-      setMessage("We could not send or confirm that link. Make sure Email Link is enabled in Firebase and this website domain is authorized.");
+      setMessage("Google sign-in could not start. Make sure Google sign-in and this website domain are enabled in Firebase.");
     }
   }
 
-  async function logOut() {
-    if (memberAuth) await signOut(memberAuth);
-  }
-
-  if (loading) return <main className={"member-page"}><div className={"member-auth-loading"}>Loading your member pass...</div></main>;
+  if (loading) return <main className="member-page"><div className="member-auth-loading">Loading your member pass...</div></main>;
   if (member) return <>{children(member)}</>;
 
-  return <main className={"member-page"}>
-    <section className={"member-auth-shell"}>
-      <a href="/" className={"member-brand"}>GDG <span /> <em>ON CAMPUS<br />KU</em></a>
+  return <main className="member-page">
+    <section className="member-auth-shell">
+      <a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a>
       <SectionMenu />
-      <div className={"member-auth-card"}>
-        <p className={"member-eyebrow"}>GDG KU MEMBER PASS · GMAIL TEST</p>
-        <h1>{isEmailLink ? "Confirm your\nKU email." : "Your pass\nstarts here."}</h1>
-        <p>Use a Gmail address once to test the member pass. After you verify it, this PWA remembers the pass on this phone.</p>
-        {!firebaseConfigured && <p className={"member-auth-warning"}>Firebase is not configured on this device yet.</p>}
-        <form onSubmit={submitEmail}><label htmlFor="member-email">Gmail address</label><input id="member-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@gmail.com" required /><button type="submit" disabled={!firebaseConfigured}>{isEmailLink ? "Verify email" : "Send sign-in link"}</button></form>
-        {message && <p className={"member-auth-message"}>{message}</p>}
-        <small>No passwords. Gmail is enabled temporarily to test Firebase email delivery before KU-only access is restored.</small>
+      <div className="member-auth-card">
+        <p className="member-eyebrow">GDG KU MEMBER PASS · GOOGLE SIGN-IN</p>
+        <h1>Your pass{"\n"}starts here.</h1>
+        <p>Continue with Google once. After that, this PWA remembers your member pass on this phone.</p>
+        {!firebaseConfigured && <p className="member-auth-warning">Firebase is not configured on this device yet.</p>}
+        <button className="member-google-sign-in" type="button" onClick={() => void signInWithGoogle()} disabled={!firebaseConfigured}><span aria-hidden="true">G</span> Continue with Google</button>
+        {message && <p className="member-auth-message">{message}</p>}
+        <small>No passwords or email links. Google confirms the account, then your member pass stays signed in on this device.</small>
       </div>
     </section>
   </main>;
 }
 
 export function MemberSignOut() {
-  return <button className={"member-sign-out"} onClick={() => { if (memberAuth) void signOut(memberAuth); }}>Sign out</button>;
+  return <button className="member-sign-out" onClick={() => { if (memberAuth) void signOut(memberAuth); }}>Sign out</button>;
 }
