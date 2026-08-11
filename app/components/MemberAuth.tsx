@@ -68,7 +68,11 @@ export function MemberAuth({ children }: Props) {
         <h1>Your pass{"\n"}starts here.</h1>
         <p>Continue with Google once. After that, this PWA remembers your member pass on this phone.</p>
         {!firebaseConfigured && <p className="member-auth-warning">Firebase is not configured on this device yet.</p>}
-        <button className="member-google-sign-in" type="button" onClick={() => void signInWithGoogle()} disabled={!firebaseConfigured}><span aria-hidden="true">G</span> Continue with Google</button>
+        <button className="member-google-sign-in" type="button" onClick={() => void signInWithGoogle()} disabled={!firebaseConfigured}>
+          <span className="member-google-mark" aria-hidden="true">G</span>
+          <span className="member-google-copy"><small>MEMBER ACCESS</small><b>Continue with Google</b></span>
+          <i aria-hidden="true">→</i>
+        </button>
         {message && <p className="member-auth-message">{message}</p>}
         <small>No passwords or email links. Google confirms the account, then your member pass stays signed in on this device.</small>
       </div>
