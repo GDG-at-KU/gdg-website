@@ -54,7 +54,7 @@ export default function Home() {
 
       <section className="events section" id="events">
           <div className="shell"><div className="heading-row"><div><p className="kicker">ON THE CALENDAR</p><h2>Make plans<br /><i>to make things.</i></h2></div><a className="button outline" href="/calendar">See all events <b>↗</b></a></div>
-          <div className="event-list">{events.map((event) => <article className={`event-card ${event.tone}`} key={event.date}><div className="event-date">{event.date}</div><div className="event-info"><p>{event.type}</p><h3>{event.title}</h3><span>{event.place}</span></div><a href="#join" aria-label={`RSVP for ${event.title}`}>RSVP <b>↗</b></a></article>)}</div>
+          <div className="event-list">{events.map((event) => <article className={`event-card ${event.tone}`} key={event.date}><div className="event-date">{event.date}</div><div className="event-info"><p>{event.type}</p><h3>{event.title}</h3><span>{event.place}</span></div></article>)}</div>
         </div>
       </section>
 
