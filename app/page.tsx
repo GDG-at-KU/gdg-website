@@ -31,7 +31,7 @@ export default function Home() {
       <section className="hero" id="top">
         <nav className="nav shell" aria-label="Main navigation">
           <a className="brand" href="#top" aria-label="GDG on Campus KU home"><span>GDG</span><i /> <em>on Campus<br />KU</em></a>
-          <div className="nav-links"><a href="/about">About</a><a href="/calendar">Calendar</a><a href="/team">Team</a></div>
+          <div className="nav-links"><a href="/about">About</a><a href="/calendar">Calendar</a><a href="/members">Members</a><a href="/team">Team</a></div>
           <SectionMenu />
         </nav>
 

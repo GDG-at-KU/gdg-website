@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 const links = [
   ["01", "Home", "/"],
-  ["02", "Member pass", "/member"],
-  ["03", "About", "/about"],
-  ["04", "Calendar", "/calendar"],
-  ["05", "Tracks", "/tracks"],
-  ["06", "Team", "/team"],
-  ["07", "Join us", "/join"],
+  ["02", "Members", "/members"],
+  ["03", "Member pass", "/member"],
+  ["04", "About", "/about"],
+  ["05", "Calendar", "/calendar"],
+  ["06", "Tracks", "/tracks"],
+  ["07", "Team", "/team"],
+  ["08", "Join us", "/join"],
 ];
 
 export function SectionMenu() {

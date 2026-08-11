@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
 import { memberDb } from "./firebase";
 
 export type MemberProfile = {
@@ -10,6 +10,8 @@ export type MemberProfile = {
 };
 
 export const blankProfile: MemberProfile = { displayName: "", major: "", graduationYear: "", leetCodeUsername: "", interests: "" };
+
+export type DirectoryMember = MemberProfile & { uid: string };
 
 function database() {
   if (!memberDb) throw new Error("Firebase Firestore is not configured.");
@@ -36,6 +38,30 @@ export async function saveProfile(uid: string, email: string, profile: MemberPro
     updatedAt: serverTimestamp(),
     createdAt: serverTimestamp(),
   }, { merge: true });
+  await setDoc(doc(database(), "memberDirectory", uid), {
+    uid,
+    displayName: profile.displayName.trim(),
+    major: profile.major.trim(),
+    graduationYear: profile.graduationYear.trim(),
+    leetCodeUsername: profile.leetCodeUsername.trim(),
+    interests,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+export async function loadDirectory(): Promise<DirectoryMember[]> {
+  const snapshot = await getDocs(collection(database(), "memberDirectory"));
+  return snapshot.docs.map((entry) => {
+    const data = entry.data();
+    return {
+      uid: entry.id,
+      displayName: typeof data.displayName === "string" ? data.displayName : "GDG Member",
+      major: typeof data.major === "string" ? data.major : "",
+      graduationYear: typeof data.graduationYear === "string" ? data.graduationYear : "",
+      leetCodeUsername: typeof data.leetCodeUsername === "string" ? data.leetCodeUsername : "",
+      interests: Array.isArray(data.interests) ? data.interests.join(", ") : "",
+    };
+  }).filter((member) => member.displayName).sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
 export async function saveAttendance(uid: string, email: string, eventCode: string) {

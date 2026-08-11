@@ -42,7 +42,7 @@ export function MemberProfile({ member, onProfileChange }: { member: GdgMember; 
     }
   }
 
-  return <section className="member-profile" aria-labelledby="profile-title">
+  return <section className="member-profile" id="profile" aria-labelledby="profile-title">
     <div><p className="member-eyebrow">MEMBER PROFILE</p><h2 id="profile-title">Make your<br /><i>builder card.</i></h2><p>Save only what helps members find the right collaborator. Your email is never shown in the public directory.</p></div>
     <form onSubmit={submit}>
       <label>Display name<input value={profile.displayName} onChange={(event) => update("displayName", event.target.value)} placeholder="How should members know you?" maxLength={60} /></label>
