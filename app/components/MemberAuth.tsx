@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { GoogleAuthProvider, getRedirectResult, onAuthStateChanged, signInWithRedirect, signOut } from "firebase/auth";
+import { GoogleAuthProvider, getRedirectResult, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
 import { firebaseConfigured, memberAuth, persistMemberSession } from "../lib/firebase";
 import { SectionMenu } from "./SectionMenu";
 
@@ -18,22 +18,25 @@ export function MemberAuth({ children }: Props) {
   useEffect(() => {
     if (!memberAuth) { setLoading(false); return; }
 
-    const unsubscribe = onAuthStateChanged(memberAuth, (user) => {
-      const verifiedEmail = user?.email?.toLowerCase();
-      const canJoin = verifiedEmail && ALLOWED_EMAIL_DOMAINS.some((domain) => verifiedEmail.endsWith(domain));
-      setMember(user && canJoin ? { uid: user.uid, email: verifiedEmail } : null);
-      setLoading(false);
-    });
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
     async function restoreGoogleSession() {
       await persistMemberSession();
       await getRedirectResult(memberAuth!).catch(() => {
-        setMessage("Google sign-in could not be completed. Please try again.");
+        if (!cancelled) setMessage("Google sign-in could not be completed. Please try again.");
+      });
+      if (cancelled) return;
+      unsubscribe = onAuthStateChanged(memberAuth!, (user) => {
+        const verifiedEmail = user?.email?.toLowerCase();
+        const canJoin = verifiedEmail && ALLOWED_EMAIL_DOMAINS.some((domain) => verifiedEmail.endsWith(domain));
+        setMember(user && canJoin ? { uid: user.uid, email: verifiedEmail } : null);
+        setLoading(false);
       });
     }
 
     void restoreGoogleSession();
-    return unsubscribe;
+    return () => { cancelled = true; unsubscribe?.(); };
   }, []);
 
   async function signInWithGoogle() {
@@ -43,7 +46,11 @@ export function MemberAuth({ children }: Props) {
       await persistMemberSession();
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
-      await signInWithRedirect(memberAuth, provider);
+      if (window.matchMedia("(pointer: coarse)").matches) {
+        await signInWithRedirect(memberAuth, provider);
+      } else {
+        await signInWithPopup(memberAuth, provider);
+      }
     } catch {
       setMessage("Google sign-in could not start. Make sure Google sign-in and this website domain are enabled in Firebase.");
     }
