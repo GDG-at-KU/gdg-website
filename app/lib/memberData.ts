@@ -64,11 +64,22 @@ export async function loadDirectory(): Promise<DirectoryMember[]> {
   }).filter((member) => member.displayName).sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
-export async function saveAttendance(uid: string, email: string, eventCode: string) {
-  const safeCode = eventCode.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 64);
-  if (!safeCode) throw new Error("That event code is not valid.");
-  await setDoc(doc(database(), "attendance", `${uid}_${safeCode}`), {
-    memberId: uid, email, eventCode: safeCode, checkedInAt: serverTimestamp(), source: "member-pwa-pilot",
-  }, { merge: true });
-  return safeCode;
+type AttendancePayload = { eventId: string; checkInCode: string };
+
+function parseAttendancePayload(rawCode: string): AttendancePayload {
+  const match = rawCode.trim().match(/^GDGKU\|([a-zA-Z0-9_-]{8,64})\|([a-zA-Z0-9_-]{12,128})$/);
+  if (!match) throw new Error("This is not an active GDG KU attendance QR code.");
+  return { eventId: match[1], checkInCode: match[2] };
+}
+
+export async function saveAttendance(uid: string, rawCode: string) {
+  const { eventId, checkInCode } = parseAttendancePayload(rawCode);
+  await setDoc(doc(database(), "attendance", `${eventId}_${uid}`), {
+    memberId: uid,
+    eventId,
+    eventTitle: "GDG KU event",
+    checkInCode,
+    checkedInAt: serverTimestamp(),
+  });
+  return "GDG KU event";
 }

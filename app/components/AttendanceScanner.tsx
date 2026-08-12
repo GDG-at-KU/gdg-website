@@ -25,11 +25,11 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
   async function recordCheckIn(rawCode: string) {
     try {
       setError(null);
-      const eventCode = await saveAttendance(member.uid, member.email, rawCode);
+      const eventCode = await saveAttendance(member.uid, rawCode);
       setResult(eventCode);
-    } catch {
-      setResult(rawCode);
-      setError("We read the event code, but Firestore is not ready to store this check-in yet.");
+    } catch (reason) {
+      setResult(null);
+      setError(reason instanceof Error ? reason.message : "We could not verify this attendance code. Scan the current event QR code.");
     }
   }
 
@@ -79,11 +79,11 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
       </div>
       <div className="member-scanner-actions">
         {!isScanning ? <button className={"member-scan-button"} onClick={startScan}>Open camera <b>?</b></button> : <button className={"member-stop-button"} onClick={stopScan}>Stop camera</button>}
-        <p>Each check-in is saved to your member record. This pilot accepts event codes; organizer-signed QR codes come next.</p>
+        <p>Each check-in is linked to your member account. Scan the live QR shown by the organizer during the event.</p>
       </div>
       {error && <p className={"member-error"}>{error}</p>}
-      {result && <div className={"member-scan-result"}><span>CHECK-IN SAVED</span><b>{result}</b><p>This check-in is attached to your member account.</p></div>}
-      <form className={"member-manual-form"} onSubmit={submitManual}><label htmlFor="attendance-code">Have a short event code instead?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="e.g. BUILD-NIGHT-01" /><button type="submit">Check in</button></div></form>
+      {result && <div className={"member-scan-result"}><span>CHECK-IN SAVED</span><b>{result}</b><p>You are checked in. Scanning again will not create a duplicate.</p></div>}
+      <form className={"member-manual-form"} onSubmit={submitManual}><label htmlFor="attendance-code">Camera not working?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="Paste the live GDG KU event code" /><button type="submit">Check in</button></div></form>
     </section>
   );
 }
