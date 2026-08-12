@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
 import { memberDb } from "./firebase";
 
 export type MemberProfile = {
@@ -12,6 +12,19 @@ export type MemberProfile = {
 export const blankProfile: MemberProfile = { displayName: "", major: "", graduationYear: "", leetCodeUsername: "", interests: "" };
 
 export type DirectoryMember = MemberProfile & { uid: string };
+
+export type BuddyPreferences = { goal: string; availability: string };
+export type BuddyRequest = {
+  id: string;
+  fromUid: string;
+  toUid: string;
+  fromName: string;
+  goal: string;
+  availability: string;
+  status: "pending" | "accepted" | "declined";
+};
+
+export const blankBuddyPreferences: BuddyPreferences = { goal: "Build a project", availability: "Weekday evenings" };
 
 function database() {
   if (!memberDb) throw new Error("Firebase Firestore is not configured.");
@@ -62,6 +75,56 @@ export async function loadDirectory(): Promise<DirectoryMember[]> {
       interests: Array.isArray(data.interests) ? data.interests.join(", ") : "",
     };
   }).filter((member) => member.displayName).sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+export async function loadBuddyPreferences(uid: string): Promise<BuddyPreferences> {
+  const snapshot = await getDoc(doc(database(), "buddyPreferences", uid));
+  if (!snapshot.exists()) return blankBuddyPreferences;
+  const data = snapshot.data();
+  return {
+    goal: typeof data.goal === "string" ? data.goal : blankBuddyPreferences.goal,
+    availability: typeof data.availability === "string" ? data.availability : blankBuddyPreferences.availability,
+  };
+}
+
+export async function saveBuddyPreferences(uid: string, preferences: BuddyPreferences) {
+  await setDoc(doc(database(), "buddyPreferences", uid), {
+    uid,
+    goal: preferences.goal,
+    availability: preferences.availability,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+export async function loadBuddyRequests(uid: string): Promise<BuddyRequest[]> {
+  const [incoming, outgoing] = await Promise.all([
+    getDocs(query(collection(database(), "buddyRequests"), where("toUid", "==", uid))),
+    getDocs(query(collection(database(), "buddyRequests"), where("fromUid", "==", uid))),
+  ]);
+  const records = new Map<string, BuddyRequest>();
+  for (const snapshot of [...incoming.docs, ...outgoing.docs]) {
+    const data = snapshot.data();
+    if (typeof data.fromUid !== "string" || typeof data.toUid !== "string") continue;
+    records.set(snapshot.id, {
+      id: snapshot.id,
+      fromUid: data.fromUid,
+      toUid: data.toUid,
+      fromName: typeof data.fromName === "string" ? data.fromName : "GDG KU member",
+      goal: typeof data.goal === "string" ? data.goal : "Build a project",
+      availability: typeof data.availability === "string" ? data.availability : "Flexible",
+      status: data.status === "accepted" || data.status === "declined" ? data.status : "pending",
+    });
+  }
+  return [...records.values()];
+}
+
+export async function sendBuddyRequest(request: Omit<BuddyRequest, "id" | "status">) {
+  const requestRef = doc(collection(database(), "buddyRequests"));
+  await setDoc(requestRef, { ...request, status: "pending", createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+}
+
+export async function respondToBuddyRequest(requestId: string, status: "accepted" | "declined") {
+  await setDoc(doc(database(), "buddyRequests", requestId), { status, updatedAt: serverTimestamp() }, { merge: true });
 }
 
 type AttendancePayload = { eventId: string; checkInCode: string };

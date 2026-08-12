@@ -25,6 +25,35 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /buddyPreferences/{memberId} {
+      allow read: if request.auth != null && request.auth.uid == memberId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == memberId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'goal', 'availability', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /buddyRequests/{requestId} {
+      allow read: if request.auth != null
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'fromName', 'goal', 'availability',
+          'status', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if request.auth != null
+        && resource.data.toUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && (request.resource.data.status == 'accepted' || request.resource.data.status == 'declined');
+      allow delete: if false;
+    }
+
     match /attendance/{recordId} {
       allow read: if request.auth != null
         && (resource.data.memberId == request.auth.uid || isOrganizer());
