@@ -29,6 +29,15 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // Firebase redirect sign-in uses helper pages under /__/auth and
+    // /__/firebase. Proxying them through this same domain prevents Safari
+    // (and other browsers with storage partitioning) from losing the sign-in
+    // state during the Google redirect.
+    if (url.pathname.startsWith("/__/auth/") || url.pathname === "/__/firebase/init.json") {
+      const firebaseUrl = new URL(`https://gdg-campus-ku.firebaseapp.com${url.pathname}${url.search}`);
+      return fetch(new Request(firebaseUrl, request));
+    }
+
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return handleImageOptimization(request, {
