@@ -236,8 +236,8 @@ select {
 
 .nav .section-menu-trigger {
   position: relative !important;
-  top: auto;
-  right: auto;
+  top: auto !important;
+  right: auto !important;
   height: 50px;
   min-width: 112px;
   margin: 0;
@@ -744,8 +744,8 @@ html,body{max-width:100%;overflow-x:hidden}button,a,input{touch-action:manipulat
 
 .nav .section-menu-trigger {
   position: relative !important;
-  top: auto;
-  right: auto;
+  top: auto !important;
+  right: auto !important;
   height: 50px;
   min-width: 112px;
   margin: 0;
@@ -810,5 +810,156 @@ html,body{max-width:100%;overflow-x:hidden}button,a,input{touch-action:manipulat
     min-width: 92px;
     height: 42px;
     padding: 0 14px;
+  }
+}
+
+/* Jayhawk orbital centerpiece */
+.jayhawk-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: 266px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  isolation: isolate;
+  animation: jayhawk-float 5.5s ease-in-out infinite;
+}
+
+.jayhawk-aura {
+  position: absolute;
+  inset: 9%;
+  z-index: -3;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgba(255, 255, 255, 0.48),
+      transparent 46%
+    ),
+    radial-gradient(circle, rgba(255, 199, 44, 0.28), transparent 69%);
+  filter: blur(12px);
+  animation: jayhawk-aura-pulse 3.8s ease-in-out infinite;
+}
+
+.jayhawk-disc {
+  position: absolute;
+  inset: 14%;
+  z-index: -2;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.2),
+      rgba(255, 255, 255, 0.05)
+    ),
+    rgba(0, 45, 112, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -18px 28px rgba(0, 31, 85, 0.22),
+    0 24px 46px rgba(0, 28, 70, 0.32);
+  backdrop-filter: blur(9px) saturate(145%);
+  -webkit-backdrop-filter: blur(9px) saturate(145%);
+}
+
+.jayhawk-avatar {
+  position: relative;
+  z-index: 2;
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  transform: translateY(-2%) rotate(-2deg);
+  filter: saturate(1.08) contrast(1.03)
+    drop-shadow(0 18px 18px rgba(0, 24, 63, 0.34))
+    drop-shadow(0 3px 2px rgba(0, 0, 0, 0.18));
+}
+
+.jayhawk-core-ring {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.jayhawk-ring-inner {
+  inset: 8%;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.035),
+    0 0 24px rgba(255, 199, 44, 0.16);
+}
+
+.jayhawk-ring-outer {
+  inset: -3%;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  animation: jayhawk-ring-spin 22s linear infinite;
+}
+
+.gdg-signal::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 42%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 199, 44, 0.12),
+    transparent 67%
+  );
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+@keyframes jayhawk-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-8px) rotate(0.8deg);
+  }
+}
+
+@keyframes jayhawk-aura-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes jayhawk-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .jayhawk-core {
+    width: 174px;
+  }
+
+  .jayhawk-avatar {
+    width: 94%;
+    height: 94%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jayhawk-core,
+  .jayhawk-aura,
+  .jayhawk-ring-outer {
+    animation: none;
   }
 }
