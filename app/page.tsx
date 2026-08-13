@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { CampusMarquee } from "./components/CampusMarquee";
 import { SectionMenu } from "./components/SectionMenu";
+import Image from "next/image";
 
 const events = [
   { date: "SEP 05", type: "BUILD NIGHT", title: "From idea to first deploy", place: "KU Campus · 6:00 PM", tone: "blue" },
@@ -30,9 +31,14 @@ export default function Home() {
     <main ref={root}>
       <section className="hero" id="top">
         <nav className="nav shell" aria-label="Main navigation">
-          <a className="brand" href="#top" aria-label="GDG on Campus KU home"><span>GDG</span><i /> <em>on Campus<br />KU</em></a>
-          <div className="nav-links"><a href="/about">About</a><a href="/calendar">Calendar</a><a href="/team">Team</a></div>
-          <SectionMenu />
+          <a className="brand" href="#top" aria-label="GDG on Campus KU home">
+            <Image className="brand-mark" src="/logo_256x256.png" alt="" width={40} height={40} priority unoptimized />
+            <span className="brand-copy"><strong>GDG on Campus</strong><small>University of Kansas</small></span>
+          </a>
+          <div className="nav-actions">
+            <div className="nav-links" aria-label="Quick links"><a href="/calendar">Calendar</a><a href="/team">Team</a></div>
+            <SectionMenu />
+          </div>
         </nav>
 
         <div className="hero-grid shell">
