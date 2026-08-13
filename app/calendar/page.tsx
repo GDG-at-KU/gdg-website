@@ -1,2 +1,3 @@
 import { GdgCalendar } from "../components/GdgCalendar";
-export default function Calendar(){return <GdgCalendar/>}
+import { SectionMenu } from "../components/SectionMenu";
+export default function Calendar(){return <><SectionMenu /><GdgCalendar/></>}

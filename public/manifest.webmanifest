@@ -1,0 +1,10 @@
+{
+  "name": "GDG on Campus KU",
+  "short_name": "GDG KU",
+  "description": "The member pass for GDG on Campus at the University of Kansas.",
+  "start_url": "/member",
+  "display": "standalone",
+  "background_color": "#0051ba",
+  "theme_color": "#0051ba",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

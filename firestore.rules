@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOrganizer() {
+      return request.auth != null
+        && request.auth.token.email == "heet2404@gmail.com";
+    }
+
+    match /members/{memberId} {
+      allow read: if request.auth != null && request.auth.uid == memberId;
+      allow create, update: if request.auth != null && request.auth.uid == memberId;
+      allow delete: if false;
+    }
+
+    match /memberDirectory/{memberId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.auth.uid == memberId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'displayName', 'major', 'graduationYear',
+          'leetCodeUsername', 'interests', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /buddyPreferences/{memberId} {
+      allow read: if request.auth != null && request.auth.uid == memberId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == memberId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'goal', 'availability', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /buddyRequests/{requestId} {
+      allow read: if request.auth != null
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly([
+          'fromUid', 'toUid', 'fromName', 'goal', 'availability',
+          'status', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if request.auth != null
+        && resource.data.toUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && (request.resource.data.status == 'accepted' || request.resource.data.status == 'declined');
+      allow delete: if false;
+    }
+
+    match /attendance/{recordId} {
+      allow read: if request.auth != null
+        && (resource.data.memberId == request.auth.uid || isOrganizer());
+      allow create: if request.auth != null
+        && request.resource.data.memberId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'memberId', 'eventId', 'eventTitle', 'checkInCode', 'checkedInAt'
+        ])
+        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.active == true
+        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.checkInCode == request.resource.data.checkInCode
+        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.codeExpiresAt > request.time;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /events/{eventId} {
+      allow read, create, update, delete: if isOrganizer();
+    }
+  }
+}

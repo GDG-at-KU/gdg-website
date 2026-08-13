@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { BrandLoader } from "./components/BrandLoader";
+import { GdgCursor } from "./components/GdgCursor";
+import { PwaRegister } from "./components/PwaRegister";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,15 +12,28 @@ export const metadata: Metadata = {
     shortcut: "/favicon.png",
     apple: "/favicon.png",
   },
-  openGraph: { title: "GDG on Campus KU", description: "Build what's next, together.", images: ["/og.png"] },
+  openGraph: {
+    title: "GDG on Campus KU",
+    description: "Build what's next, together.",
+    images: ["/og.png"],
+  },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="stylesheet" href="/member.css" />
+        <meta name="theme-color" content="#0051ba" />
+      </head>
       <body>
         <BrandLoader />
         {children}
+        <PwaRegister />
+        <GdgCursor />
       </body>
     </html>
   );
