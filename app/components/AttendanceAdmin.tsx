@@ -113,7 +113,7 @@ export function AttendanceAdmin({ member }: { member: GdgMember }) {
   if (!isAdmin) return <main className="admin-page"><SectionMenu /><section className="admin-denied"><p className="member-eyebrow">GDG KU ORGANIZER ACCESS</p><h1>Organizer<br /><i>only.</i></h1><p>This dashboard is available only to approved GDG KU organizers.</p><a href="/member">Return to my pass →</a></section></main>;
 
   return <main className="admin-page">
-    <nav className="member-nav"><a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a><div className="member-nav-actions"><MemberSignOut /></div><SectionMenu /></nav>
+    <nav className="member-nav site-header"><a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a><div className="member-nav-actions"><MemberSignOut /></div><SectionMenu /></nav>
     <section className="admin-shell">
       <div className="admin-heading"><div><p className="member-eyebrow">GDG KU ORGANIZER TOOL</p><h1>Attendance,<br /><i>on autopilot.</i></h1><p>Start one session, display the changing QR code, and let signed-in members check themselves in.</p></div><form onSubmit={startSession}><label>NEW EVENT TITLE<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Build Night — September" /></label><button type="submit">Start session →</button></form></div>
       <div className="admin-session-picker"><span>EVENT SESSIONS</span><div>{sessions.map((session) => <button key={session.id} className={selected?.id === session.id ? "selected" : ""} onClick={() => setSelectedId(session.id)}>{session.active ? "LIVE · " : "CLOSED · "}{session.title}</button>)}</div></div>

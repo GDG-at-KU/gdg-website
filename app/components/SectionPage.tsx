@@ -18,7 +18,7 @@ const destinations: Record<string, { href: string; label: string }> = {
 
 export function SectionPage({ number, eyebrow, title, text, items }: { number: string; eyebrow: string; title: string; text: string; items: string[] }) {
   return <main className="inner-page">
-    <header className="inner-nav shell"><Link className="brand" href="/"><span>GDG</span><i /> <em>on Campus<br />KU</em></Link><SectionMenu /></header>
+    <header className="inner-nav shell site-header"><Link className="brand" href="/"><span>GDG</span><i /> <em>on Campus<br />KU</em></Link><SectionMenu /></header>
     <section className="inner-hero shell"><p className="eyebrow"><span /> {number} . {eyebrow}</p><h1>{title}</h1><p>{text}</p></section>
     <section className="inner-list shell">{items.map((item, index) => <article key={item}><details><summary><span>0{index + 1}</span><h2>{item}</h2><b>+</b></summary><div className="accordion-copy"><p>{copy[item] || `Explore ${item.toLowerCase()} with GDG on Campus KU. More details will be announced soon.`}</p>{destinations[item] && <a href={destinations[item].href} target={destinations[item].href.startsWith("http") ? "_blank" : undefined} rel={destinations[item].href.startsWith("http") ? "noreferrer" : undefined}>{destinations[item].label} ↗</a>}</div></details></article>)}</section>
   </main>;

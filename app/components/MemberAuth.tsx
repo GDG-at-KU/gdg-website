@@ -61,8 +61,7 @@ export function MemberAuth({ children }: Props) {
 
   return <main className="member-page">
     <section className="member-auth-shell">
-      <a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a>
-      <SectionMenu />
+      <header className="member-auth-nav site-header"><a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a><SectionMenu /></header>
       <div className="member-auth-card">
         <p className="member-eyebrow">GDG KU MEMBER PASS · GOOGLE SIGN-IN</p>
         <h1>Your pass{"\n"}starts here.</h1>

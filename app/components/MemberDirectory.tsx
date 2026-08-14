@@ -28,7 +28,7 @@ export function MemberDirectory({ member }: { member: GdgMember }) {
   }, [members, query]);
 
   return <main className="members-page">
-    <nav className="member-nav"><a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a><div className="member-nav-actions"><MemberSignOut /></div><SectionMenu /></nav>
+    <nav className="member-nav site-header"><a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a><div className="member-nav-actions"><MemberSignOut /></div><SectionMenu /></nav>
     <section className="members-hero"><div className="members-hero-copy"><p className="member-eyebrow">GDG ON CAMPUS / KU</p><h1>Meet your<br /><i>builders.</i></h1><p>Find classmates working on similar ideas, studying for the same challenge, or looking for their next project collaborator.</p></div><aside><span>PUBLIC PROFILES</span><b>{members.length}</b><small>signed-in builder profiles</small></aside></section>
     <section className="members-directory" aria-labelledby="directory-title">
       <div className="members-directory-head"><div><p className="member-eyebrow">COMMUNITY DIRECTORY</p><h2 id="directory-title">Find your<br /><i>people.</i></h2></div><a href="/member#profile">Edit my profile <span>-&gt;</span></a></div>
