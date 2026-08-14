@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unknown-property */
 // @ts-nocheck
 "use client";
 
@@ -15,7 +14,6 @@ import type { GdgMember } from "./MemberAuth";
 extend({ MeshLineGeometry, MeshLineMaterial });
 
 const CARD_GLB = "/assets/lanyard/card.glb";
-const LANYARD_TEXTURE = "/assets/lanyard/lanyard.png";
 const BLANK_PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 const FRONT_UV_RECT = { x: 0, y: 0, w: 0.5, h: 0.755 };
 const BACK_UV_RECT = { x: 0.5, y: 0, w: 0.5, h: 0.757 };
@@ -121,8 +119,8 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
     if (frontTex.image) draw(frontTex.image, FRONT_UV_RECT); if (backTex.image) draw(backTex.image, BACK_UV_RECT);
     const composite = new THREE.CanvasTexture(canvas); composite.colorSpace = THREE.SRGBColorSpace; composite.flipY = baseMap.flipY; composite.anisotropy = 16; composite.needsUpdate = true; return composite;
   }, [frontTex, backTex, materials.base.map]);
-  const [leftCurve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
-  const [rightCurve] = useState(() => new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]));
+  const [leftCurve] = useState(() => { const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]); curve.curveType = "chordal"; return curve; });
+  const [rightCurve] = useState(() => { const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]); curve.curveType = "chordal"; return curve; });
   const [dragged, drag] = useState<THREE.Vector3 | false>(false);
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1]); useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1]); useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1]); useSphericalJoint(j3, card, [[0, 0, 0], [0, 1.5, 0]]);
   useFrame((state, delta) => {
@@ -139,7 +137,6 @@ function Band({ isMobile, frontImage, backImage }: { isMobile: boolean; frontIma
     const leftPoints = leftCurve.getPoints(isMobile ? 16 : 32), rightPoints = rightCurve.getPoints(isMobile ? 16 : 32);
     leftBand.current?.geometry.setPoints(leftPoints); rightBand.current?.geometry.setPoints(rightPoints); leftStitch.current?.geometry.setPoints(leftPoints); rightStitch.current?.geometry.setPoints(rightPoints); ang.copy(card.current.angvel()); rot.copy(card.current.rotation()); card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * .25, z: ang.z });
   });
-  leftCurve.curveType = rightCurve.curveType = "chordal"; texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   const props = { type: "dynamic", canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
   return <>
     <group position={[0, 4.15, 0]}>
