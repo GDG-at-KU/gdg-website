@@ -127,22 +127,40 @@ export async function respondToBuddyRequest(requestId: string, status: "accepted
   await setDoc(doc(database(), "buddyRequests", requestId), { status, updatedAt: serverTimestamp() }, { merge: true });
 }
 
-type AttendancePayload = { eventId: string; checkInCode: string };
+type AttendancePayload = { kind: "checkin" | "wrapup"; eventId: string; code: string };
+export type WrapUpPrompt = { eventId: string; title: string; question: string; options: string[] };
 
 function parseAttendancePayload(rawCode: string): AttendancePayload {
-  const match = rawCode.trim().match(/^GDGKU\|([a-zA-Z0-9_-]{8,64})\|([a-zA-Z0-9_-]{12,128})$/);
+  const match = rawCode.trim().match(/^GDGKU(?:-(END))?\|([a-zA-Z0-9_-]{8,64})\|([a-zA-Z0-9_-]{12,128})$/);
   if (!match) throw new Error("This is not an active GDG KU attendance QR code.");
-  return { eventId: match[1], checkInCode: match[2] };
+  return { kind: match[1] ? "wrapup" : "checkin", eventId: match[2], code: match[3] };
 }
 
-export async function saveAttendance(uid: string, rawCode: string) {
-  const { eventId, checkInCode } = parseAttendancePayload(rawCode);
-  await setDoc(doc(database(), "attendance", `${eventId}_${uid}`), {
+export async function beginAttendance(uid: string, rawCode: string) {
+  const payload = parseAttendancePayload(rawCode);
+  if (payload.kind === "wrapup") {
+    const prompt = await getDoc(doc(database(), "engagementPrompts", payload.eventId));
+    if (!prompt.exists()) throw new Error("The wrap-up question is not ready yet.");
+    const data = prompt.data();
+    return { kind: "wrapup" as const, code: payload.code, prompt: {
+      eventId: payload.eventId,
+      title: typeof data.title === "string" ? data.title : "GDG KU event",
+      question: typeof data.question === "string" ? data.question : "What was the key idea from this session?",
+      options: Array.isArray(data.options) ? data.options.filter((option): option is string => typeof option === "string").slice(0, 4) : [],
+    }};
+  }
+  await setDoc(doc(database(), "attendance", `${payload.eventId}_${uid}`), {
     memberId: uid,
-    eventId,
-    eventTitle: "GDG KU event",
-    checkInCode,
+    eventId: payload.eventId,
+    checkInCode: payload.code,
     checkedInAt: serverTimestamp(),
   });
-  return "GDG KU event";
+  return { kind: "checkin" as const };
+}
+
+export async function saveWrapUp(uid: string, prompt: WrapUpPrompt, code: string, answerIndex: number, reflection: string) {
+  await setDoc(doc(database(), "engagement", `${prompt.eventId}_${uid}`), {
+    memberId: uid, eventId: prompt.eventId, checkOutCode: code, answerIndex,
+    reflection: reflection.trim(), submittedAt: serverTimestamp(),
+  });
 }

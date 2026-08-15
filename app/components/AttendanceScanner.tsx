@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import type { GdgMember } from "./MemberAuth";
-import { saveAttendance } from "../lib/memberData";
+import { beginAttendance, saveWrapUp, WrapUpPrompt } from "../lib/memberData";
 
 type ScannerControls = { stop: () => void };
 
@@ -13,6 +13,9 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState("");
+  const [wrapUp, setWrapUp] = useState<{ prompt: WrapUpPrompt; code: string } | null>(null);
+  const [answerIndex, setAnswerIndex] = useState<number | null>(null);
+  const [reflection, setReflection] = useState("");
 
   const stopScan = () => {
     controlsRef.current?.stop();
@@ -25,8 +28,11 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
   async function recordCheckIn(rawCode: string) {
     try {
       setError(null);
-      const eventCode = await saveAttendance(member.uid, rawCode);
-      setResult(eventCode);
+      const response = await beginAttendance(member.uid, rawCode);
+      if (response.kind === "wrapup") {
+        setWrapUp({ prompt: response.prompt, code: response.code });
+        setResult(null);
+      } else setResult("Check-in recorded");
     } catch (reason) {
       setResult(null);
       setError(reason instanceof Error ? reason.message : "We could not verify this attendance code. Scan the current event QR code.");
@@ -66,6 +72,16 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
     setManualCode("");
   }
 
+  async function submitWrapUp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!wrapUp || answerIndex === null) return;
+    try {
+      await saveWrapUp(member.uid, wrapUp.prompt, wrapUp.code, answerIndex, reflection);
+      setResult("Wrap-up completed — thank you for learning with us.");
+      setWrapUp(null); setReflection(""); setAnswerIndex(null);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Your response could not be saved. Check the current wrap-up QR and try again."); }
+  }
+
   return (
     <section className={"member-scanner"} aria-labelledby="attendance-title">
       <div className="member-scanner-head">
@@ -83,6 +99,7 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
       </div>
       {error && <p className={"member-error"}>{error}</p>}
       {result && <div className={"member-scan-result"}><span>CHECK-IN SAVED</span><b>{result}</b><p>You are checked in. Scanning again will not create a duplicate.</p></div>}
+      {wrapUp && <form className="member-wrapup" onSubmit={submitWrapUp}><p className="member-eyebrow">SESSION WRAP-UP · {wrapUp.prompt.title}</p><h3>{wrapUp.prompt.question}</h3><div>{wrapUp.prompt.options.map((option, index) => <label key={option}><input type="radio" name="wrapup-answer" checked={answerIndex === index} onChange={() => setAnswerIndex(index)} /> {option}</label>)}</div><label>One thing you learned <textarea value={reflection} onChange={(event) => setReflection(event.target.value)} maxLength={280} placeholder="A short takeaway helps us improve the next session." required /></label><button type="submit" disabled={answerIndex === null}>Submit wrap-up →</button></form>}
       <form className={"member-manual-form"} onSubmit={submitManual}><label htmlFor="attendance-code">Camera not working?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="Paste the live GDG KU event code" /><button type="submit">Check in</button></div></form>
     </section>
   );

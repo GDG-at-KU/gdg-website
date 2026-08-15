@@ -60,13 +60,35 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.memberId == request.auth.uid
         && request.resource.data.keys().hasOnly([
-          'memberId', 'eventId', 'eventTitle', 'checkInCode', 'checkedInAt'
+          'memberId', 'eventId', 'checkInCode', 'checkedInAt'
         ])
         && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.active == true
         && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.checkInCode == request.resource.data.checkInCode
         && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.codeExpiresAt > request.time;
       allow update: if false;
       allow delete: if false;
+    }
+
+    match /engagementPrompts/{eventId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isOrganizer();
+    }
+
+    match /engagement/{recordId} {
+      allow read: if request.auth != null
+        && (resource.data.memberId == request.auth.uid || isOrganizer());
+      allow create: if request.auth != null
+        && request.resource.data.memberId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'memberId', 'eventId', 'checkOutCode', 'answerIndex', 'reflection', 'submittedAt'
+        ])
+        && request.resource.data.reflection is string
+        && request.resource.data.reflection.size() <= 280
+        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.engagementActive == true
+        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.engagementCode == request.resource.data.checkOutCode
+        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.engagementExpiresAt > request.time
+        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.correctAnswer == request.resource.data.answerIndex;
+      allow update, delete: if false;
     }
 
     match /events/{eventId} {
