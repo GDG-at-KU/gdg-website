@@ -13,7 +13,7 @@ function MemberPass({ member }: { member: GdgMember }) {
   return <main className={"member-page"}>
     <nav className={"member-nav site-header"}><a href="/" className={"member-brand"}>GDG <span /> <em>ON CAMPUS<br />KU</em></a><div className={"member-nav-actions"}>{member.email.toLowerCase() === "heet2404@gmail.com" && <a className="member-admin-link" href="/admin/attendance">Attendance</a>}<MemberSignOut /></div><SectionMenu /></nav>
     <section className={"member-hero"}>
-      <div><p className={"member-eyebrow"}>YOUR GDG KU PASS</p><h1>Carry the<br /><i>community.</i></h1><p className={"member-intro"}>Your verified email is connected to this phone. Scan in at events without filling out a form again.</p><a className="member-directory-cta" href="/members">Meet the members <span>→</span></a></div>
+      <div><p className={"member-eyebrow"}>YOUR GDG KU PASS</p><h1>Carry the<br /><i>community.</i></h1><p className={"member-intro"}>Your verified email is connected to this phone. Scan in at events without filling out a form again.</p><a className="member-directory-cta" href="/buddies">Find a co-builder <span>→</span></a></div>
       <MemberIdentityCard member={member} profile={profile} />
     </section>
     <MemberProfile member={member} onProfileChange={setProfile} />
