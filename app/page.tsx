@@ -52,7 +52,7 @@ export default function Home() {
 
       <section className="statement section shell" id="about">
         <div className="section-index">01 / OUR COMMUNITY</div>
-        <div className="statement-copy"><p className="kicker">MORE THAN A CLUB</p><h2>Come for the code.<br /><i>Stay for the people.</i></h2><p>GDG on Campus KU brings students across majors together to explore technology through hands-on learning, creative experiments, and generous collaboration.</p><a className="text-link dark" href="#join">Get to know GDG <b>↗</b></a></div>
+        <div className="statement-copy"><p className="kicker">MORE THAN A CLUB</p><h2>Come for the code.<br /><i>Stay for the people.</i></h2><p>GDG on Campus KU brings students across majors together to explore technology through hands-on learning, creative experiments, and generous collaboration.</p><a className="text-link dark" href="/about">Get to know GDG <b>↗</b></a></div>
         <div className="moon-card"><p>THE<br />BUILDER&apos;S<br />PHASES</p><div className="moons"><i /><i /><i /><i /><i /></div><small>DISCOVER · MAKE · SHARE · REPEAT</small></div>
       </section>
 

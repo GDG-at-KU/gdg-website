@@ -110,7 +110,7 @@ export function AttendanceAdmin({ member }: { member: GdgMember }) {
     URL.revokeObjectURL(link.href);
   }
 
-  if (!isAdmin) return <main className="admin-page"><SectionMenu /><section className="admin-denied"><p className="member-eyebrow">GDG KU ORGANIZER ACCESS</p><h1>Organizer<br /><i>only.</i></h1><p>This dashboard is available only to approved GDG KU organizers.</p><a href="/member">Return to my pass →</a></section></main>;
+  if (!isAdmin) return <main className="admin-page"><nav className="member-nav site-header"><a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a><div className="member-nav-actions"><MemberSignOut /></div><SectionMenu /></nav><section className="admin-denied"><p className="member-eyebrow">GDG KU ORGANIZER ACCESS</p><h1>Organizer<br /><i>only.</i></h1><p>This dashboard is available only to approved GDG KU organizers.</p><a href="/member">Return to my pass →</a></section></main>;
 
   return <main className="admin-page">
     <nav className="member-nav site-header"><a href="/" className="member-brand">GDG <span /> <em>ON CAMPUS<br />KU</em></a><div className="member-nav-actions"><MemberSignOut /></div><SectionMenu /></nav>

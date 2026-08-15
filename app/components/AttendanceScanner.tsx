@@ -78,7 +78,7 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
         {isScanning && <div className={"member-scan-guide"} aria-hidden="true" />}
       </div>
       <div className="member-scanner-actions">
-        {!isScanning ? <button className={"member-scan-button"} onClick={startScan}>Open camera <b>?</b></button> : <button className={"member-stop-button"} onClick={stopScan}>Stop camera</button>}
+        {!isScanning ? <button className={"member-scan-button"} onClick={startScan}>Open camera</button> : <button className={"member-stop-button"} onClick={stopScan}>Stop camera</button>}
         <p>Each check-in is linked to your member account. Scan the live QR shown by the organizer during the event.</p>
       </div>
       {error && <p className={"member-error"}>{error}</p>}

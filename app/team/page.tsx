@@ -1,2 +1,2 @@
 import { SectionPage } from "../components/SectionPage";
-export default function Team(){return <SectionPage number="04" eyebrow="The team" title="Powered by students like you." text="Meet the organizers, designers, developers, and community builders creating space for the next person to begin." items={["Meet the organizers","Join the core team","Partner with GDG KU"]}/>}
+export default function Team(){return <SectionPage number="04" eyebrow="The founding team" title="Powered by students like you." text="GDG on Campus KU is being built in public. Help shape the workshops, community, and projects students will remember." items={["Build with the founding team","Apply for a core role","Partner with GDG KU"]}/>}

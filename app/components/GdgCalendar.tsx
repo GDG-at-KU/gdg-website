@@ -11,7 +11,6 @@ export function GdgCalendar() {
   const cells = Array.from({ length: start + days }, (_, index) => (index < start ? 0 : index - start + 1));
 
   return <section className="calendar-shell">
-    <div className="calendar-head"><p>GDG ON CAMPUS · KU</p><a href="/">← Home</a></div>
     <div className="calendar-title">
       <div><p className="eyebrow"><span /> EVENT CALENDAR</p><h1>Something good<br /><i>is loading.</i></h1></div>
       <div className="calendar-controls"><button onClick={() => setMonth(Math.max(0, month - 1))} disabled={!month} aria-label="Previous month">←</button><b>{months[month]}</b><button onClick={() => setMonth(Math.min(2, month + 1))} disabled={month === 2} aria-label="Next month">→</button></div>

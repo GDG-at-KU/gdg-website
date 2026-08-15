@@ -18,7 +18,7 @@ function MemberPass({ member }: { member: GdgMember }) {
     </section>
     <MemberProfile member={member} onProfileChange={setProfile} />
     <AttendanceScanner member={member} />
-    <section className={"member-roadmap"}><p className={"member-eyebrow"}>YOUR MEMBER SYSTEM</p><h2>One pass.<br /><i>More momentum.</i></h2><div><article><span>01</span><h3>Email verified</h3><p>Your verified email proves that this device belongs to a GDG KU member.</p></article><article><span>02</span><h3>Attendance next</h3><p>Every scan will be linked to this member ID and checked by the server.</p></article><article><span>03</span><h3>Builder buddies</h3><p>Match with students for LeetCode, projects, and study sessions.</p></article></div></section>
+    <section className={"member-roadmap"}><p className={"member-eyebrow"}>YOUR MEMBER SYSTEM</p><h2>One pass.<br /><i>More momentum.</i></h2><div><article><span>01</span><h3>Email verified</h3><p>Your verified email connects this device to your GDG KU member profile.</p></article><article><span>02</span><h3>Attendance ready</h3><p>Each event scan is validated against the active session before a check-in is recorded.</p></article><article><span>03</span><h3>Builder buddies</h3><p>Match with students for LeetCode, projects, and study sessions.</p></article></div></section>
   </main>;
 }
 

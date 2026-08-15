@@ -968,3 +968,7 @@ html,body{max-width:100%;overflow-x:hidden}button,a,input{touch-action:manipulat
     animation: none;
   }
 }
+
+/* Empty calendar cells retain the same deliberate grid rhythm as event days. */
+.calendar-empty-day{min-height:106px;padding:12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#f7f5f0;color:#101d3655}.calendar-empty-day b{font-size:14px}@media(max-width:760px){.calendar-empty-day{min-height:64px;padding:7px}.calendar-empty-day b{font-size:12px}}
+.inner-list details .accordion-copy a{display:inline-flex;margin:0 0 30px 76px;padding:11px 14px;border:1px solid #ffffff88;color:#fff;font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;transition:background .2s,color .2s}.inner-list details .accordion-copy a:hover{background:#fff;color:var(--blue)}@media(max-width:760px){.inner-list details .accordion-copy a{margin-left:46px;margin-bottom:24px}}
