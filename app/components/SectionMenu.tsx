@@ -10,7 +10,6 @@ const links = [
   ["05", "Tracks", "/tracks"],
   ["06", "About", "/about"],
   ["07", "Team", "/team"],
-  ["08", "Join GDG KU", "/join"],
 ];
 
 export function SectionMenu() {
@@ -47,7 +46,7 @@ export function SectionMenu() {
   return <>
     <button className="section-menu-trigger" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-controls="site-menu"><span>{open ? "Close" : "Menu"}</span><i>{open ? "x" : "+"}</i></button>
     <div className="section-menu-panel" ref={panel} id="site-menu">
-      <div className="section-menu-top"><p>GDG ON CAMPUS . KU</p></div>
+      <div className="section-menu-top"><p>GDG ON CAMPUS · KU</p><span>BUILD · LEARN · CONNECT</span></div>
       <nav aria-label="Site navigation">{links.map(([number, label, href]) => <a className="section-menu-link" href={href} key={label} onClick={() => setOpen(false)}><span>{number}</span><b>{label}</b><i>-&gt;</i></a>)}</nav>
       <div className="section-menu-bottom"><span>BUILD . LEARN . CONNECT</span><span>UNIVERSITY OF KANSAS</span></div>
     </div>
