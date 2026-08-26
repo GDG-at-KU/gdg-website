@@ -15,7 +15,7 @@ export function MemberProfile({ member, onProfileChange }: { member: GdgMember; 
       if (!active) return;
       setProfile(saved);
       onProfileChange?.(saved);
-      setStatus(saved.displayName || saved.leetCodeUsername ? "Profile saved to your member account." : "Complete your profile to join the member directory.");
+      setStatus(saved.displayName || saved.leetCodeUsername || saved.discordUsername || saved.instagramUsername ? "Profile saved to your member account." : "Complete your profile to join the member directory.");
     }).catch(() => active && setStatus("Enable Firestore to save your profile."));
     return () => { active = false; };
   }, [member.uid]);
@@ -43,12 +43,14 @@ export function MemberProfile({ member, onProfileChange }: { member: GdgMember; 
   }
 
   return <section className="member-profile" id="profile" aria-labelledby="profile-title">
-    <div><p className="member-eyebrow">MEMBER PROFILE</p><h2 id="profile-title">Make your<br /><i>builder card.</i></h2><p>Save only what helps members find the right collaborator. Your email is never shown in the signed-in member directory.</p></div>
+    <div><p className="member-eyebrow">MEMBER PROFILE</p><h2 id="profile-title">Make your<br /><i>builder card.</i></h2><p>Save only what helps members find the right collaborator. Your email is never shown; optional Discord and Instagram handles are visible to signed-in GDG KU members.</p></div>
     <form onSubmit={submit}>
       <label>Display name<input value={profile.displayName} onChange={(event) => update("displayName", event.target.value)} placeholder="How should members know you?" maxLength={60} /></label>
       <label>Major or program<input value={profile.major} onChange={(event) => update("major", event.target.value)} placeholder="e.g. Computer Science" maxLength={80} /></label>
       <label>Graduation year<input value={profile.graduationYear} onChange={(event) => update("graduationYear", event.target.value)} placeholder="e.g. 2028" inputMode="numeric" maxLength={4} /></label>
       <label>LeetCode username<input value={profile.leetCodeUsername} onChange={(event) => update("leetCodeUsername", event.target.value.replace(/^@/, ""))} placeholder="e.g. jayhawk_builder" maxLength={60} /></label>
+      <label>Discord username (optional)<input value={profile.discordUsername} onChange={(event) => update("discordUsername", event.target.value.replace(/^@/, ""))} placeholder="e.g. jayhawk.builder" autoCapitalize="none" maxLength={32} /></label>
+      <label>Instagram username (optional)<input value={profile.instagramUsername} onChange={(event) => update("instagramUsername", event.target.value.replace(/^@/, ""))} placeholder="e.g. gdgatku" autoCapitalize="none" maxLength={30} /></label>
       <label className="member-profile-wide">Interests (comma-separated)<input value={profile.interests} onChange={(event) => update("interests", event.target.value)} placeholder="AI, web development, interview prep" maxLength={160} /></label>
       {profile.leetCodeUsername && <a className="member-leetcode-link" href={`https://leetcode.com/u/${encodeURIComponent(profile.leetCodeUsername)}/`} target="_blank" rel="noreferrer">Open @{profile.leetCodeUsername} on LeetCode ↗</a>}
       <div className="member-profile-action"><span role="status">{status}</span><button type="submit" disabled={saving}>{saving ? "Saving…" : "Save profile"}</button></div>

@@ -20,7 +20,7 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.keys().hasOnly([
           'uid', 'displayName', 'major', 'graduationYear',
-          'leetCodeUsername', 'interests', 'updatedAt'
+          'leetCodeUsername', 'interests', 'discordUsername', 'instagramUsername', 'updatedAt'
         ]);
       allow delete: if false;
     }

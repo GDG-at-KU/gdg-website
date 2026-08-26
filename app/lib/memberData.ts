@@ -7,9 +7,11 @@ export type MemberProfile = {
   graduationYear: string;
   leetCodeUsername: string;
   interests: string;
+  discordUsername: string;
+  instagramUsername: string;
 };
 
-export const blankProfile: MemberProfile = { displayName: "", major: "", graduationYear: "", leetCodeUsername: "", interests: "" };
+export const blankProfile: MemberProfile = { displayName: "", major: "", graduationYear: "", leetCodeUsername: "", interests: "", discordUsername: "", instagramUsername: "" };
 
 export type DirectoryMember = MemberProfile & { uid: string };
 
@@ -41,6 +43,8 @@ export async function loadProfile(uid: string): Promise<MemberProfile> {
     graduationYear: typeof data.graduationYear === "string" ? data.graduationYear : "",
     leetCodeUsername: typeof data.leetCodeUsername === "string" ? data.leetCodeUsername : "",
     interests: Array.isArray(data.interests) ? data.interests.join(", ") : "",
+    discordUsername: typeof data.discordUsername === "string" ? data.discordUsername : "",
+    instagramUsername: typeof data.instagramUsername === "string" ? data.instagramUsername : "",
   };
 }
 
@@ -58,6 +62,8 @@ export async function saveProfile(uid: string, email: string, profile: MemberPro
     graduationYear: profile.graduationYear.trim(),
     leetCodeUsername: profile.leetCodeUsername.trim(),
     interests,
+    discordUsername: profile.discordUsername.trim().replace(/^@/, ""),
+    instagramUsername: profile.instagramUsername.trim().replace(/^@/, ""),
     updatedAt: serverTimestamp(),
   }, { merge: true });
 }
@@ -73,6 +79,8 @@ export async function loadDirectory(): Promise<DirectoryMember[]> {
       graduationYear: typeof data.graduationYear === "string" ? data.graduationYear : "",
       leetCodeUsername: typeof data.leetCodeUsername === "string" ? data.leetCodeUsername : "",
       interests: Array.isArray(data.interests) ? data.interests.join(", ") : "",
+      discordUsername: typeof data.discordUsername === "string" ? data.discordUsername : "",
+      instagramUsername: typeof data.instagramUsername === "string" ? data.instagramUsername : "",
     };
   }).filter((member) => member.displayName).sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
