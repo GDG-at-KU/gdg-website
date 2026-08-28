@@ -15,6 +15,12 @@ export const blankProfile: MemberProfile = { displayName: "", major: "", graduat
 
 export type DirectoryMember = MemberProfile & { uid: string };
 
+export type DiscordLink = {
+  discordId: string;
+  username: string;
+  consistentMember: boolean;
+};
+
 export type BuddyPreferences = { goal: string; availability: string };
 export type BuddyRequest = {
   id: string;
@@ -83,6 +89,18 @@ export async function loadDirectory(): Promise<DirectoryMember[]> {
       instagramUsername: typeof data.instagramUsername === "string" ? data.instagramUsername : "",
     };
   }).filter((member) => member.displayName).sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+export async function loadDiscordLink(uid: string): Promise<DiscordLink | null> {
+  const snapshot = await getDoc(doc(database(), "discordLinks", uid));
+  if (!snapshot.exists()) return null;
+  const data = snapshot.data();
+  if (typeof data.discordId !== "string" || typeof data.username !== "string") return null;
+  return {
+    discordId: data.discordId,
+    username: data.username,
+    consistentMember: data.consistentMember === true,
+  };
 }
 
 export async function loadBuddyPreferences(uid: string): Promise<BuddyPreferences> {

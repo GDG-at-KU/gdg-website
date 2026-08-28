@@ -6,7 +6,7 @@ import { beginAttendance, saveWrapUp, WrapUpPrompt } from "../lib/memberData";
 
 type ScannerControls = { stop: () => void };
 
-export function AttendanceScanner({ member }: { member: GdgMember }) {
+export function AttendanceScanner({ member, discordConnected }: { member: GdgMember; discordConnected: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<ScannerControls | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -81,6 +81,12 @@ export function AttendanceScanner({ member }: { member: GdgMember }) {
       setWrapUp(null); setReflection(""); setAnswerIndex(null);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Your response could not be saved. Check the current wrap-up QR and try again."); }
   }
+
+  if (!discordConnected) return <section className="member-scanner member-discord-lock" aria-labelledby="attendance-title">
+    <div className="member-scanner-head"><div><p className="member-eyebrow">MEMBER CHECK-IN</p><h2 id="attendance-title">Connect first.<br /><i>Then scan.</i></h2></div><span className="member-live-dot">DISCORD REQUIRED</span></div>
+    <p>Attendance is tied to your Discord membership so completed sessions can unlock community roles. Connect Discord above before using event QR codes.</p>
+    <a href="#discord-access">Connect Discord →</a>
+  </section>;
 
   return (
     <section className={"member-scanner"} aria-labelledby="attendance-title">

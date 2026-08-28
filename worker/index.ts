@@ -5,6 +5,18 @@ import handler from "vinext/server/app-router-entry";
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
+  FIREBASE_WEB_API_KEY?: string;
+  FIREBASE_PROJECT_ID?: string;
+  FIREBASE_SERVICE_ACCOUNT_EMAIL?: string;
+  FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY?: string;
+  DISCORD_CLIENT_ID?: string;
+  DISCORD_CLIENT_SECRET?: string;
+  DISCORD_BOT_TOKEN?: string;
+  DISCORD_GUILD_ID?: string;
+  DISCORD_VERIFIED_ROLE_ID?: string;
+  DISCORD_CONSISTENT_ROLE_ID?: string;
+  DISCORD_REDIRECT_URI?: string;
+  DISCORD_STATE_SECRET?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -12,6 +24,115 @@ interface Env {
       };
     };
   };
+}
+
+type DiscordLink = { discordId: string; username: string; consistentMember: boolean };
+const encoder = new TextEncoder();
+
+function json(data: unknown, status = 200) { return Response.json(data, { status }); }
+function base64Url(bytes: Uint8Array) { return btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", ""); }
+function base64UrlText(value: string) { return base64Url(encoder.encode(value)); }
+function base64UrlDecode(value: string) {
+  const normalized = value.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat((4 - value.length % 4) % 4);
+  return Uint8Array.from(atob(normalized), (character) => character.charCodeAt(0));
+}
+
+function discordReady(env: Env) {
+  return Boolean(env.FIREBASE_WEB_API_KEY && env.FIREBASE_PROJECT_ID && env.FIREBASE_SERVICE_ACCOUNT_EMAIL && env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY && env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET && env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_VERIFIED_ROLE_ID && env.DISCORD_CONSISTENT_ROLE_ID && env.DISCORD_REDIRECT_URI && env.DISCORD_STATE_SECRET);
+}
+
+async function firebaseUid(request: Request, env: Env) {
+  const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token || !env.FIREBASE_WEB_API_KEY) throw new Error("Sign in with Google before connecting Discord.");
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(env.FIREBASE_WEB_API_KEY)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idToken: token }) });
+  const payload = await response.json() as { users?: Array<{ localId?: string }> };
+  const uid = payload.users?.[0]?.localId;
+  if (!response.ok || !uid) throw new Error("Your Google session has expired. Sign in again and retry.");
+  return uid;
+}
+
+async function signState(uid: string, secret: string) {
+  const payload = base64UrlText(JSON.stringify({ uid, exp: Date.now() + 10 * 60_000, nonce: crypto.randomUUID() }));
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = base64Url(new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(payload))));
+  return `${payload}.${signature}`;
+}
+
+async function verifyState(value: string | null, secret: string) {
+  if (!value) throw new Error("Discord connection expired. Start again from your member pass.");
+  const [payload, signature] = value.split(".");
+  if (!payload || !signature) throw new Error("Invalid Discord connection state.");
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+  const valid = await crypto.subtle.verify("HMAC", key, base64UrlDecode(signature), encoder.encode(payload));
+  if (!valid) throw new Error("Invalid Discord connection state.");
+  const decoded = JSON.parse(new TextDecoder().decode(base64UrlDecode(payload))) as { uid?: string; exp?: number };
+  if (!decoded.uid || !decoded.exp || decoded.exp < Date.now()) throw new Error("Discord connection expired. Start again from your member pass.");
+  return decoded.uid;
+}
+
+function privateKeyBytes(value: string) {
+  const pem = value.replaceAll("\\n", "\n").replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
+  return Uint8Array.from(atob(pem), (character) => character.charCodeAt(0));
+}
+
+async function firestoreToken(env: Env) {
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const header = base64UrlText(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claims = base64UrlText(JSON.stringify({ iss: env.FIREBASE_SERVICE_ACCOUNT_EMAIL, sub: env.FIREBASE_SERVICE_ACCOUNT_EMAIL, scope: "https://www.googleapis.com/auth/datastore", aud: "https://oauth2.googleapis.com/token", iat: issuedAt, exp: issuedAt + 3600 }));
+  const signingInput = `${header}.${claims}`;
+  const key = await crypto.subtle.importKey("pkcs8", privateKeyBytes(env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY!), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  const signature = base64Url(new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, encoder.encode(signingInput))));
+  const response = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${signingInput}.${signature}` }) });
+  const payload = await response.json() as { access_token?: string };
+  if (!response.ok || !payload.access_token) throw new Error("Firebase service account is not configured correctly.");
+  return payload.access_token;
+}
+
+async function firestoreRequest(env: Env, path: string, init: RequestInit = {}) {
+  const token = await firestoreToken(env);
+  const base = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(env.FIREBASE_PROJECT_ID!)}/databases/(default)`;
+  const target = path.startsWith("documents:") ? `${base}/${path}` : `${base}/documents/${path}`;
+  const response = await fetch(target, { ...init, headers: { Authorization: `Bearer ${token}`, "content-type": "application/json", ...(init.headers || {}) } });
+  return response;
+}
+
+async function readDiscordLink(env: Env, uid: string): Promise<DiscordLink | null> {
+  const response = await firestoreRequest(env, `discordLinks/${encodeURIComponent(uid)}`);
+  if (response.status === 404) return null;
+  const payload = await response.json() as { fields?: Record<string, { stringValue?: string; booleanValue?: boolean }> };
+  const fields = payload.fields;
+  const discordId = fields?.discordId?.stringValue;
+  const username = fields?.username?.stringValue;
+  return discordId && username ? { discordId, username, consistentMember: fields?.consistentMember?.booleanValue === true } : null;
+}
+
+async function writeDiscordLink(env: Env, uid: string, link: DiscordLink) {
+  const body = { fields: { discordId: { stringValue: link.discordId }, username: { stringValue: link.username }, consistentMember: { booleanValue: link.consistentMember }, linkedAt: { timestampValue: new Date().toISOString() } } };
+  const query = new URLSearchParams();
+  ["discordId", "username", "consistentMember", "linkedAt"].forEach((field) => query.append("updateMask.fieldPaths", field));
+  const response = await firestoreRequest(env, `discordLinks/${encodeURIComponent(uid)}?${query}`, { method: "PATCH", body: JSON.stringify(body) });
+  if (!response.ok) throw new Error("Could not save your verified Discord connection.");
+}
+
+async function addDiscordRole(env: Env, discordId: string, roleId: string) {
+  const response = await fetch(`https://discord.com/api/v10/guilds/${encodeURIComponent(env.DISCORD_GUILD_ID!)}/members/${encodeURIComponent(discordId)}/roles/${encodeURIComponent(roleId)}`, { method: "PUT", headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` } });
+  if (!response.ok && response.status !== 204) throw new Error("Discord could not assign this role. Check the bot's role order and Manage Roles permission.");
+}
+
+async function isGuildMember(env: Env, discordId: string) {
+  const response = await fetch(`https://discord.com/api/v10/guilds/${encodeURIComponent(env.DISCORD_GUILD_ID!)}/members/${encodeURIComponent(discordId)}`, { headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` } });
+  return response.status === 200;
+}
+
+async function completedEventCount(env: Env, uid: string) {
+  const query = (collectionId: string) => firestoreRequest(env, "documents:runQuery", { method: "POST", body: JSON.stringify({ structuredQuery: { from: [{ collectionId }], where: { fieldFilter: { field: { fieldPath: "memberId" }, op: "EQUAL", value: { stringValue: uid } } }, select: { fields: [{ fieldPath: "eventId" }] }, limit: 100 } }) });
+  const [attendanceResponse, engagementResponse] = await Promise.all([query("attendance"), query("engagement")]);
+  const extract = async (response: Response) => {
+    const rows = await response.json() as Array<{ document?: { fields?: { eventId?: { stringValue?: string } } } }>;
+    return new Set(rows.map((row) => row.document?.fields?.eventId?.stringValue).filter((eventId): eventId is string => Boolean(eventId)));
+  };
+  const [attendance, engagement] = await Promise.all([extract(attendanceResponse), extract(engagementResponse)]);
+  return [...attendance].filter((eventId) => engagement.has(eventId)).length;
 }
 
 interface ExecutionContext {
@@ -28,6 +149,55 @@ interface ExecutionContext {
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/discord/connect") {
+      if (!discordReady(env)) return json({ error: "Discord connection is not configured yet. Ask a GDG KU organizer to finish the Discord setup." }, 503);
+      try {
+        const uid = await firebaseUid(request, env);
+        const state = await signState(uid, env.DISCORD_STATE_SECRET!);
+        const authorizationUrl = new URL("https://discord.com/oauth2/authorize");
+        authorizationUrl.search = new URLSearchParams({ client_id: env.DISCORD_CLIENT_ID!, response_type: "code", redirect_uri: env.DISCORD_REDIRECT_URI!, scope: "identify", state, prompt: "consent" }).toString();
+        return json({ url: authorizationUrl.toString() });
+      } catch (error) { return json({ error: error instanceof Error ? error.message : "Could not start Discord connection." }, 401); }
+    }
+
+    if (url.pathname === "/api/discord/callback") {
+      const memberPage = new URL("/member", url.origin);
+      try {
+        if (!discordReady(env)) throw new Error("Discord is not configured yet.");
+        const uid = await verifyState(url.searchParams.get("state"), env.DISCORD_STATE_SECRET!);
+        const code = url.searchParams.get("code");
+        if (!code) throw new Error("Discord did not return an authorization code.");
+        const tokenResponse = await fetch("https://discord.com/api/v10/oauth2/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ client_id: env.DISCORD_CLIENT_ID!, client_secret: env.DISCORD_CLIENT_SECRET!, grant_type: "authorization_code", code, redirect_uri: env.DISCORD_REDIRECT_URI! }) });
+        const tokenPayload = await tokenResponse.json() as { access_token?: string };
+        if (!tokenResponse.ok || !tokenPayload.access_token) throw new Error("Discord authorization was not completed.");
+        const userResponse = await fetch("https://discord.com/api/v10/users/@me", { headers: { Authorization: `Bearer ${tokenPayload.access_token}` } });
+        const user = await userResponse.json() as { id?: string; username?: string; global_name?: string };
+        if (!userResponse.ok || !user.id || !user.username) throw new Error("Discord account details could not be verified.");
+        if (!await isGuildMember(env, user.id)) { memberPage.searchParams.set("discord", "join"); return Response.redirect(memberPage, 302); }
+        await writeDiscordLink(env, uid, { discordId: user.id, username: user.global_name || user.username, consistentMember: false });
+        await addDiscordRole(env, user.id, env.DISCORD_VERIFIED_ROLE_ID!);
+        memberPage.searchParams.set("discord", "connected");
+      } catch (error) { memberPage.searchParams.set("discord", "error"); memberPage.searchParams.set("message", error instanceof Error ? error.message : "Discord connection failed."); }
+      return Response.redirect(memberPage, 302);
+    }
+
+    if (url.pathname === "/api/discord/sync-role" && request.method === "POST") {
+      if (!discordReady(env)) return json({ error: "Discord role sync is not configured yet." }, 503);
+      try {
+        const uid = await firebaseUid(request, env);
+        const link = await readDiscordLink(env, uid);
+        if (!link) return json({ error: "Connect Discord before checking role progress." }, 400);
+        const completedEvents = await completedEventCount(env, uid);
+        const consistentMember = completedEvents >= 2;
+        if (consistentMember) {
+          if (!await isGuildMember(env, link.discordId)) return json({ error: "Join the GDG KU Discord server, then connect Discord again." }, 400);
+          await addDiscordRole(env, link.discordId, env.DISCORD_CONSISTENT_ROLE_ID!);
+          await writeDiscordLink(env, uid, { ...link, consistentMember: true });
+        }
+        return json({ completedEvents, consistentMember });
+      } catch (error) { return json({ error: error instanceof Error ? error.message : "Could not sync your Discord role." }, 400); }
+    }
 
     // Firebase redirect sign-in uses helper pages under /__/auth and
     // /__/firebase. Proxying them through this same domain prevents Safari
