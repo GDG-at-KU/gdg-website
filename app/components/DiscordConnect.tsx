@@ -14,6 +14,7 @@ export function DiscordConnect({ member, onConnectionChange }: Props) {
   const [link, setLink] = useState<DiscordLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [completedEvents, setCompletedEvents] = useState<number | null>(null);
 
   async function refresh() {
     try {
@@ -52,7 +53,9 @@ export function DiscordConnect({ member, onConnectionChange }: Props) {
       const response = await fetch("/api/discord/sync-role", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       const payload = await response.json() as { completedEvents?: number; consistentMember?: boolean; error?: string };
       if (!response.ok) throw new Error(payload.error || "Could not update your Discord roles.");
-      setMessage(payload.consistentMember ? "Consistent Member unlocked in Discord." : `${payload.completedEvents || 0}/2 completed sessions. Finish two sessions to unlock Consistent Member.`);
+      const total = payload.completedEvents || 0;
+      setCompletedEvents(total);
+      setMessage(payload.consistentMember ? "Consistent Member unlocked in Discord." : `${total}/2 completed sessions complete. Each session needs both check-in and the wrap-up learning check.`);
       await refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not update your Discord roles.");
@@ -61,7 +64,7 @@ export function DiscordConnect({ member, onConnectionChange }: Props) {
 
   return <section className="discord-connect" id="discord-access">
     <div><p className="member-eyebrow">REQUIRED COMMUNITY ACCESS</p><h2>Connect<br /><i>Discord.</i></h2><p>Link the Discord account you use in GDG KU. Two completed sessions unlock the Consistent Member role and the internship notifier.</p></div>
-    <aside>{loading ? <p>Checking Discord access...</p> : link ? <><span className="discord-connected">CONNECTED</span><h3>@{link.username}</h3><p>{link.consistentMember ? "Consistent Member is active." : "Finish two check-in and wrap-up learning checks to unlock Consistent Member."}</p><button type="button" onClick={() => void syncRole()}>Check my progress →</button></> : <><span>STEP 1 OF 1</span><h3>Discord is required</h3><p>Join the GDG KU Discord server first, then securely connect your Discord account here.</p><a href="https://discord.gg/BmKfZUnaQ" target="_blank" rel="noreferrer">Join Discord →</a><button type="button" onClick={() => void connect()}>Connect Discord →</button></>}</aside>
+    <aside>{loading ? <p>Checking Discord access...</p> : link ? <><span className="discord-connected">CONNECTED</span><h3>@{link.username}</h3><p>{link.consistentMember ? "Consistent Member is active." : completedEvents === null ? "Check your progress to see completed sessions and unlock status." : `${completedEvents}/2 completed sessions. Each session needs check-in and the wrap-up learning check.`}</p><button type="button" onClick={() => void syncRole()}>Check my progress →</button></> : <><span>STEP 1 OF 1</span><h3>Discord is required</h3><p>Join the GDG KU Discord server first, then securely connect your Discord account here.</p><a href="https://discord.gg/BmKfZUnaQ" target="_blank" rel="noreferrer">Join Discord →</a><button type="button" onClick={() => void connect()}>Connect Discord →</button></>}</aside>
     {message && <p className="discord-message" role="status">{message}</p>}
   </section>;
 }
