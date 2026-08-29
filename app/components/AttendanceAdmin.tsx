@@ -7,7 +7,7 @@ import { GdgMember, MemberSignOut } from "./MemberAuth";
 import { SectionMenu } from "./SectionMenu";
 import { memberDb } from "../lib/firebase";
 
-const ADMIN_EMAILS = ["heet2404@gmail.com"];
+const ADMIN_EMAILS = ["heet2404@gmail.com", "hpa2309@gmail.com"];
 const ROTATION_MS = 45_000;
 
 type EventSession = {
