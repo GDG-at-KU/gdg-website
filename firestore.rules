@@ -91,8 +91,7 @@ service cloud.firestore {
         && request.resource.data.reflection.size() <= 280
         && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.engagementActive == true
         && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.engagementCode == request.resource.data.checkOutCode
-        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.engagementExpiresAt > request.time
-        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.correctAnswer == request.resource.data.answerIndex;
+        && get(/databases/$(database)/documents/events/$(request.resource.data.eventId)).data.engagementExpiresAt > request.time;
       allow update, delete: if false;
     }
 

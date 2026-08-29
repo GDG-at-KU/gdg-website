@@ -185,8 +185,13 @@ export async function beginAttendance(uid: string, rawCode: string) {
 }
 
 export async function saveWrapUp(uid: string, prompt: WrapUpPrompt, code: string, answerIndex: number, reflection: string) {
-  await setDoc(doc(database(), "engagement", `${prompt.eventId}_${uid}`), {
+  const record = doc(database(), "engagement", `${prompt.eventId}_${uid}`);
+  const existing = await getDoc(record);
+  if (existing.exists()) return { alreadySubmitted: true };
+
+  await setDoc(record, {
     memberId: uid, eventId: prompt.eventId, checkOutCode: code, answerIndex,
     reflection: reflection.trim(), submittedAt: serverTimestamp(),
   });
+  return { alreadySubmitted: false };
 }

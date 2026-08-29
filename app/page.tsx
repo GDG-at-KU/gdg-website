@@ -5,70 +5,150 @@ import Image from "next/image";
 import { CampusMarquee } from "./components/CampusMarquee";
 import { SectionMenu } from "./components/SectionMenu";
 
-const events = [
-  { date: "SOON", type: "FIRST BUILD NIGHT", title: "A hands-on night for ideas in progress", place: "Date and room announced in Discord", tone: "blue" },
-  { date: "SOON", type: "TECH TALK", title: "Tools, career stories, and practical demos", place: "Topic announced soon - follow LinkedIn", tone: "crimson" },
-  { date: "SOON", type: "COMMUNITY BUILD", title: "Make something KU students can use", place: "Bring your curiosity - all experience levels welcome", tone: "yellow" },
+const passSteps = [
+  {
+    number: "01",
+    title: "Join the community",
+    text: "Join the GDG KU Discord so you hear about events and can unlock member access.",
+    href: "https://discord.gg/BmKfZUnaQ",
+    label: "Join Discord",
+    external: true,
+  },
+  {
+    number: "02",
+    title: "Sign in with Google",
+    text: "Use the same Google account on every device. Your member pass stays connected to that account.",
+    href: "/member",
+    label: "Create member pass",
+    external: false,
+  },
+  {
+    number: "03",
+    title: "Connect and show up",
+    text: "Connect Discord once, complete your profile, then scan the live QR code at each session.",
+    href: "/member",
+    label: "Open my pass",
+    external: false,
+  },
 ];
-
-const tracks = ["AI & ML", "Web", "Cloud", "Android", "Flutter", "Career"];
 
 export default function Home() {
   const root = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    let ctx: { revert: () => void } | undefined;
+    let context: { revert: () => void } | undefined;
+
     void import("gsap").then(({ gsap }) => {
-      ctx = gsap.context(() => {
-        gsap.fromTo(".reveal", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, stagger: 0.11, ease: "power3.out", delay: 0.08 });
-        gsap.to(".scroll-line", { scaleY: 1, duration: 1.4, ease: "power2.inOut", repeat: -1, yoyo: true });
+      if (!root.current) return;
+      context = gsap.context(() => {
+        gsap.fromTo(
+          ".reveal",
+          { opacity: 0, y: 24 },
+          { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: "power3.out" },
+        );
       }, root);
     });
-    return () => ctx?.revert();
+
+    return () => context?.revert();
   }, []);
 
   return (
     <main ref={root}>
-      <section className="hero" id="top">
-        <nav className="nav shell" aria-label="Main navigation">
-          <a className="brand" href="#top" aria-label="GDG on Campus KU home">
-            <Image className="brand-mark" src="/logo_256x256.png" alt="" width={40} height={40} priority unoptimized />
-            <span className="brand-copy"><strong>GDG on Campus</strong><small>University of Kansas</small></span>
+      <section className="hero home-hero" id="top">
+        <nav className="shell">
+          <a className="brand" href="/" aria-label="GDG on Campus KU home">
+            <Image src="/gdg-logo.svg" alt="GDG on Campus KU" width={196} height={48} priority />
           </a>
-          <div className="nav-actions"><div className="nav-links" aria-label="Quick links"><a href="/calendar">Calendar</a><a href="/team">Team</a></div><SectionMenu /></div>
+          <SectionMenu />
         </nav>
 
         <div className="hero-grid shell">
           <div className="hero-copy">
             <p className="eyebrow reveal"><span /> UNIVERSITY OF KANSAS · LAWRENCE</p>
-            <h1 className="reveal">Build what&apos;s<br /><i>next, together.</i></h1>
-            <p className="hero-text reveal">A student-led community for curious builders. Learn new technology, meet your people, and create work that matters.</p>
-            <div className="hero-actions reveal"><a className="button primary" href="#join">Join the community <b>↗</b></a><a className="text-link" href="#events">What&apos;s coming <b>↓</b></a></div>
+            <h1 className="reveal">Join once.<br /><i>Show up ready.</i></h1>
+            <p className="hero-description reveal">
+              Your GDG KU member pass keeps your profile, Discord access, and event check-ins in one place.
+            </p>
+            <div className="hero-actions reveal">
+              <a className="button button-yellow" href="/member">Get your member pass <b>↗</b></a>
+              <a className="text-link" href="#member-pass">How it works <b>↓</b></a>
+            </div>
           </div>
-          <div className="hero-art reveal"><CampusMarquee /><p className="orbit-label">GDG × KU<br />IN MOTION</p><div className="star one">✦</div><div className="star two">✦</div><div className="hero-mark">EST.<br />2026</div></div>
+
+          <div className="hero-art reveal">
+            <CampusMarquee />
+            <div className="hero-mark">GDG<br />KU</div>
+          </div>
         </div>
-        <div className="hero-footer shell"><p>Google Developer Groups on Campus</p><div className="scroll-cue"><span className="scroll-line" />SCROLL TO EXPLORE</div><p>Jayhawk-built. Future-facing.</p></div>
-      </section>
 
-      <section className="statement section shell" id="about">
-        <div className="section-index">01 / OUR COMMUNITY</div>
-        <div className="statement-copy"><p className="kicker">MORE THAN A CLUB</p><h2>Come for the code.<br /><i>Stay for the people.</i></h2><p>GDG on Campus KU brings students across majors together to explore technology through hands-on learning, creative experiments, and generous collaboration.</p><a className="text-link dark" href="/about">Get to know GDG <b>↗</b></a></div>
-        <div className="moon-card"><p>THE<br />BUILDER&apos;S<br />PHASES</p><div className="moons"><i /><i /><i /><i /><i /></div><small>DISCOVER · MAKE · SHARE · REPEAT</small></div>
-      </section>
-
-      <section className="events section" id="events">
-        <div className="shell"><div className="heading-row"><div><p className="kicker">WHAT&apos;S COMING</p><h2>Plans are<br /><i>taking shape.</i></h2></div><a className="button outline" href="https://discord.gg/BmKfZUnaQ" target="_blank" rel="noreferrer">Get updates on Discord <b>↗</b></a></div>
-          <div className="event-list">{events.map((event) => <article className={`event-card ${event.tone}`} key={event.type}><div className="event-date">{event.date}</div><div className="event-info"><p>{event.type}</p><h3>{event.title}</h3><span>{event.place}</span></div></article>)}</div>
+        <div className="hero-footer shell">
+          <p>GOOGLE DEVELOPER GROUPS ON CAMPUS</p>
+          <p>ONE ACCOUNT · EVERY EVENT</p>
         </div>
       </section>
 
-      <section className="tracks section shell" id="tracks"><div className="tracks-intro"><p className="kicker">FIND YOUR THREAD</p><h2>A place for every<br /><i>kind of builder.</i></h2></div><div className="track-grid">{tracks.map((track, index) => <div className="track" key={track}><span>0{index + 1}</span><b>{track}</b><i>{index % 2 ? "↗" : "✦"}</i></div>)}</div></section>
+      <section className="member-pass-brief" id="member-pass">
+        <div className="shell">
+          <div className="pass-brief-heading">
+            <div>
+              <p className="kicker">MEMBER PASS</p>
+              <h2>Everything you need<br /><i>to get started.</i></h2>
+            </div>
+            <p>
+              No repetitive sign-up forms. Once you have a member pass, your profile and event access stay with your Google account.
+            </p>
+          </div>
 
-      <section className="team section" id="team"><div className="shell team-layout"><div><p className="kicker">THE PEOPLE BEHIND IT</p><h2>Powered by<br /><i>students like you.</i></h2><p className="team-copy">We&apos;re organizers, designers, developers, and first-time builders making room for the next person to start.</p></div><div className="team-note"><div className="sunflower">✺</div><p>Want to shape this community?</p><a className="button crimson" href="/team">Meet the team <b>↗</b></a></div></div></section>
+          <div className="pass-steps">
+            {passSteps.map((step) => (
+              <article key={step.number}>
+                <span>{step.number}</span>
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
+                <a href={step.href} target={step.external ? "_blank" : undefined} rel={step.external ? "noreferrer" : undefined}>
+                  {step.label} <b>↗</b>
+                </a>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      <section className="join" id="join"><div className="join-grid"><div className="join-copy"><p className="kicker">YOUR INVITATION</p><h2>The next great<br /><i>thing starts here.</i></h2><p>No experience required. Bring your curiosity and we&apos;ll bring the community.</p></div><div className="join-actions"><a className="join-link discord" href="https://discord.gg/BmKfZUnaQ" target="_blank" rel="noreferrer"><span>01</span><b>Join Discord</b><i>↗</i></a><a className="join-link linkedin" href="https://www.linkedin.com/company/gdg-at-ku/posts/?feedView=all" target="_blank" rel="noreferrer"><span>02</span><b>Follow on LinkedIn</b><i>↗</i></a><a className="join-link email" href="mailto:gdgatku@gmail.com"><span>03</span><b>Contact GDG KU</b><i>↗</i></a></div></div></section>
+      <section className="home-update section">
+        <div className="shell home-update-grid">
+          <div>
+            <p className="kicker">WHAT&apos;S NEXT</p>
+            <h2>Events are<br /><i>taking shape.</i></h2>
+          </div>
+          <div>
+            <p>
+              Workshops, build nights, and community sessions will be announced soon. The Discord is the quickest way to hear first.
+            </p>
+            <div className="home-update-actions">
+              <a className="button button-blue" href="https://discord.gg/BmKfZUnaQ" target="_blank" rel="noreferrer">Join Discord <b>↗</b></a>
+              <a className="text-link" href="/calendar">View calendar <b>↗</b></a>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <footer className="footer shell"><a className="brand" href="#top"><span>GDG</span><i /> <em>on Campus<br />KU</em></a><p>© 2026 GDG on Campus KU</p><p>Built at the University of Kansas</p></footer>
+      <section className="home-links">
+        <div className="shell">
+          <p>KEEP IN TOUCH</p>
+          <div>
+            <a href="https://www.linkedin.com/company/gdg-at-ku/posts/?feedView=all" target="_blank" rel="noreferrer">LinkedIn <b>↗</b></a>
+            <a href="mailto:gdgatku@gmail.com">gdgatku@gmail.com <b>↗</b></a>
+            <a href="/about">About GDG KU <b>↗</b></a>
+          </div>
+        </div>
+      </section>
+
+      <footer className="footer">
+        <div className="shell">
+          <span>© {new Date().getFullYear()} GDG ON CAMPUS · KU</span>
+          <span>BUILD · LEARN · CONNECT</span>
+        </div>
+      </footer>
     </main>
   );
 }

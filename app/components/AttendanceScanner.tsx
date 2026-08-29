@@ -16,6 +16,7 @@ export function AttendanceScanner({ member, discordConnected }: { member: GdgMem
   const [wrapUp, setWrapUp] = useState<{ prompt: WrapUpPrompt; code: string } | null>(null);
   const [answerIndex, setAnswerIndex] = useState<number | null>(null);
   const [reflection, setReflection] = useState("");
+  const [isSubmittingWrapUp, setIsSubmittingWrapUp] = useState(false);
 
   const stopScan = () => {
     controlsRef.current?.stop();
@@ -74,12 +75,25 @@ export function AttendanceScanner({ member, discordConnected }: { member: GdgMem
 
   async function submitWrapUp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!wrapUp || answerIndex === null) return;
+    if (!wrapUp || answerIndex === null) {
+      setError("Choose an answer before submitting your wrap-up.");
+      return;
+    }
     try {
-      await saveWrapUp(member.uid, wrapUp.prompt, wrapUp.code, answerIndex, reflection);
-      setResult("Wrap-up completed — thank you for learning with us.");
+      setError(null);
+      setResult(null);
+      setIsSubmittingWrapUp(true);
+      const response = await saveWrapUp(member.uid, wrapUp.prompt, wrapUp.code, answerIndex, reflection);
+      setResult(response.alreadySubmitted
+        ? "This session wrap-up was already submitted."
+        : "Wrap-up completed — thank you for learning with us.");
       setWrapUp(null); setReflection(""); setAnswerIndex(null);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Your response could not be saved. Check the current wrap-up QR and try again."); }
+    } catch (reason) {
+      setResult(null);
+      setError(reason instanceof Error ? reason.message : "Your response could not be saved. Check the current wrap-up QR and try again.");
+    } finally {
+      setIsSubmittingWrapUp(false);
+    }
   }
 
   if (!discordConnected) return <section className="member-scanner member-discord-lock" aria-labelledby="attendance-title">
@@ -105,7 +119,7 @@ export function AttendanceScanner({ member, discordConnected }: { member: GdgMem
       </div>
       {error && <p className={"member-error"}>{error}</p>}
       {result && <div className={"member-scan-result"}><span>CHECK-IN SAVED</span><b>{result}</b><p>You are checked in. Scanning again will not create a duplicate.</p></div>}
-      {wrapUp && <form className="member-wrapup" onSubmit={submitWrapUp}><p className="member-eyebrow">SESSION WRAP-UP · {wrapUp.prompt.title}</p><h3>{wrapUp.prompt.question}</h3><div>{wrapUp.prompt.options.map((option, index) => <label key={option}><input type="radio" name="wrapup-answer" checked={answerIndex === index} onChange={() => setAnswerIndex(index)} /> {option}</label>)}</div><label>One thing you learned <textarea value={reflection} onChange={(event) => setReflection(event.target.value)} maxLength={280} placeholder="A short takeaway helps us improve the next session." required /></label><button type="submit" disabled={answerIndex === null}>Submit wrap-up →</button></form>}
+      {wrapUp && <form className="member-wrapup" onSubmit={submitWrapUp}><p className="member-eyebrow">SESSION WRAP-UP · {wrapUp.prompt.title}</p><h3>{wrapUp.prompt.question}</h3><div>{wrapUp.prompt.options.map((option, index) => <label key={option}><input type="radio" name="wrapup-answer" checked={answerIndex === index} onChange={() => setAnswerIndex(index)} /> {option}</label>)}</div><label>One thing you learned <textarea value={reflection} onChange={(event) => setReflection(event.target.value)} maxLength={280} placeholder="A short takeaway helps us improve the next session." required /></label><button type="submit" disabled={answerIndex === null || isSubmittingWrapUp}>{isSubmittingWrapUp ? "Saving wrap-up…" : "Submit wrap-up →"}</button></form>}
       <form className={"member-manual-form"} onSubmit={submitManual}><label htmlFor="attendance-code">Camera not working?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="Paste the live GDG KU event code" /><button type="submit">Check in</button></div></form>
     </section>
   );
