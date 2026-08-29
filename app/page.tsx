@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { CampusMarquee } from "./components/CampusMarquee";
 import { SectionMenu } from "./components/SectionMenu";
 
@@ -54,34 +55,42 @@ export default function Home() {
   return (
     <main ref={root}>
       <section className="hero home-hero" id="top">
-        <nav className="shell">
-          <a className="brand brand-lockup" href="/" aria-label="GDG on Campus KU home">
-            <strong>GDG</strong><i /><span>ON CAMPUS<br />KU</span>
+        <nav className="nav shell" aria-label="Main navigation">
+          <a className="brand" href="#top" aria-label="GDG on Campus KU home">
+            <Image className="brand-mark" src="/logo_256x256.png" alt="" width={40} height={40} priority unoptimized />
+            <span className="brand-copy"><strong>GDG on Campus</strong><small>University of Kansas</small></span>
           </a>
-          <SectionMenu />
+          <div className="nav-actions">
+            <div className="nav-links" aria-label="Quick links"><a href="/calendar">Calendar</a><a href="/team">Team</a></div>
+            <SectionMenu />
+          </div>
         </nav>
 
         <div className="hero-grid shell">
           <div className="hero-copy">
             <p className="eyebrow reveal"><span /> UNIVERSITY OF KANSAS · LAWRENCE</p>
-            <h1 className="reveal">Build what&apos;s<br /><i>next.</i></h1>
-            <p className="hero-description reveal">
-              Create a member pass to join the community, connect Discord, and check in at GDG KU events.
+            <h1 className="reveal">Your GDG KU<br /><i>member pass.</i></h1>
+            <p className="hero-text reveal">
+              Sign in with Google, connect Discord, and use one pass for every GDG KU event.
             </p>
             <div className="hero-actions reveal">
-              <a className="button button-yellow" href="/member">Create member pass <b>↗</b></a>
-              <a className="text-link" href="/about">About GDG KU <b>↗</b></a>
+              <a className="button primary" href="/member">Create your pass <b>↗</b></a>
+              <a className="text-link" href="#member-pass">How it works <b>↓</b></a>
             </div>
           </div>
 
           <div className="hero-art reveal">
             <CampusMarquee />
+            <p className="orbit-label">GDG × KU<br />IN MOTION</p>
+            <div className="star one">✦</div><div className="star two">✦</div>
+            <div className="hero-mark">EST.<br />2026</div>
           </div>
         </div>
 
         <div className="hero-footer shell">
           <p>GOOGLE DEVELOPER GROUPS ON CAMPUS</p>
-          <p>KU STUDENTS · CURIOUS BUILDERS</p>
+          <div className="scroll-cue"><span className="scroll-line" />SCROLL TO EXPLORE</div>
+          <p>JAYHAWK-BUILT. FUTURE-FACING.</p>
         </div>
       </section>
 
