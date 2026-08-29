@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { useEffect, useRef } from "react";
 import type { Mesh } from "three";
 
@@ -21,5 +20,5 @@ export function CampusMarquee() {
       const resize=()=>{camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight)};addEventListener("resize",resize);dispose=()=>{cancelAnimationFrame(frame);removeEventListener("resize",resize);host.removeEventListener("pointermove",move);renderer.dispose();host.replaceChildren()};
     }); return()=>dispose();
   },[]);
-  return <div className="gdg-signal" aria-label="Interactive Jayhawk orbital network"><div ref={mount} className="gdg-canvas"/><div className="jayhawk-core"><span className="jayhawk-aura"/><span className="jayhawk-disc"/><Image className="jayhawk-avatar" src="/avatar.png" alt="Low-poly Jayhawk mascot" width={1254} height={1254} priority unoptimized/><span className="jayhawk-core-ring jayhawk-ring-inner"/><span className="jayhawk-core-ring jayhawk-ring-outer"/></div><p className="signal-hint">MOVE TO EXPLORE <em>↗</em></p></div>;
+  return <div className="gdg-signal" aria-label="Interactive GDG orbital network"><div ref={mount} className="gdg-canvas"/><div className="gdg-core-label"><span>GDG ON CAMPUS</span><b>KU</b><i/><strong>BUILD · LEARN</strong></div><p className="signal-hint">MOVE TO EXPLORE <em>↗</em></p></div>;
 }

@@ -1,31 +1,30 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Image from "next/image";
 import { CampusMarquee } from "./components/CampusMarquee";
 import { SectionMenu } from "./components/SectionMenu";
 
 const passSteps = [
   {
     number: "01",
-    title: "Join the community",
-    text: "Join the GDG KU Discord so you hear about events and can unlock member access.",
+    title: "Join Discord",
+    text: "Get announcements, meet other members, and stay connected between events.",
     href: "https://discord.gg/BmKfZUnaQ",
     label: "Join Discord",
     external: true,
   },
   {
     number: "02",
-    title: "Sign in with Google",
-    text: "Use the same Google account on every device. Your member pass stays connected to that account.",
+    title: "Create your pass",
+    text: "Sign in with Google once. Your profile stays available on every device.",
     href: "/member",
     label: "Create member pass",
     external: false,
   },
   {
     number: "03",
-    title: "Connect and show up",
-    text: "Connect Discord once, complete your profile, then scan the live QR code at each session.",
+    title: "Check in at events",
+    text: "Connect Discord, complete your profile, then use the live event QR code.",
     href: "/member",
     label: "Open my pass",
     external: false,
@@ -56,8 +55,8 @@ export default function Home() {
     <main ref={root}>
       <section className="hero home-hero" id="top">
         <nav className="shell">
-          <a className="brand" href="/" aria-label="GDG on Campus KU home">
-            <Image src="/gdg-logo.svg" alt="GDG on Campus KU" width={196} height={48} priority />
+          <a className="brand brand-lockup" href="/" aria-label="GDG on Campus KU home">
+            <strong>GDG</strong><i /><span>ON CAMPUS<br />KU</span>
           </a>
           <SectionMenu />
         </nav>
@@ -65,25 +64,24 @@ export default function Home() {
         <div className="hero-grid shell">
           <div className="hero-copy">
             <p className="eyebrow reveal"><span /> UNIVERSITY OF KANSAS · LAWRENCE</p>
-            <h1 className="reveal">Join once.<br /><i>Show up ready.</i></h1>
+            <h1 className="reveal">Build what&apos;s<br /><i>next.</i></h1>
             <p className="hero-description reveal">
-              Your GDG KU member pass keeps your profile, Discord access, and event check-ins in one place.
+              Create a member pass to join the community, connect Discord, and check in at GDG KU events.
             </p>
             <div className="hero-actions reveal">
-              <a className="button button-yellow" href="/member">Get your member pass <b>↗</b></a>
-              <a className="text-link" href="#member-pass">How it works <b>↓</b></a>
+              <a className="button button-yellow" href="/member">Create member pass <b>↗</b></a>
+              <a className="text-link" href="/about">About GDG KU <b>↗</b></a>
             </div>
           </div>
 
           <div className="hero-art reveal">
             <CampusMarquee />
-            <div className="hero-mark">GDG<br />KU</div>
           </div>
         </div>
 
         <div className="hero-footer shell">
           <p>GOOGLE DEVELOPER GROUPS ON CAMPUS</p>
-          <p>ONE ACCOUNT · EVERY EVENT</p>
+          <p>KU STUDENTS · CURIOUS BUILDERS</p>
         </div>
       </section>
 
@@ -95,7 +93,7 @@ export default function Home() {
               <h2>Everything you need<br /><i>to get started.</i></h2>
             </div>
             <p>
-              No repetitive sign-up forms. Once you have a member pass, your profile and event access stay with your Google account.
+              One Google account gives you a reusable pass for your profile, Discord access, and live event check-ins.
             </p>
           </div>
 
@@ -122,7 +120,7 @@ export default function Home() {
           </div>
           <div>
             <p>
-              Workshops, build nights, and community sessions will be announced soon. The Discord is the quickest way to hear first.
+              Workshops, build nights, and community sessions will be announced soon. Join Discord to hear first.
             </p>
             <div className="home-update-actions">
               <a className="button button-blue" href="https://discord.gg/BmKfZUnaQ" target="_blank" rel="noreferrer">Join Discord <b>↗</b></a>
