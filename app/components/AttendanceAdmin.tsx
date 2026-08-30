@@ -9,6 +9,7 @@ import { memberAuth, memberDb } from "../lib/firebase";
 
 const ADMIN_EMAILS = ["heet2404@gmail.com", "hpa2309@gmail.com"];
 const ROTATION_MS = 45_000;
+const WRAP_UP_DURATION_MS = 15 * 60_000;
 
 type EventSession = {
   id: string;
@@ -76,14 +77,14 @@ export function AttendanceAdmin({ member }: { member: GdgMember }) {
   }, [selected]);
 
   useEffect(() => {
-    if (!memberDb || (!selected?.active && !selected?.engagementActive)) return;
-    const interval = window.setInterval(() => void rotateCode(selected.id, Boolean(selected.engagementActive)), ROTATION_MS);
+    if (!memberDb || !selected?.active) return;
+    const interval = window.setInterval(() => void rotateCode(selected.id), ROTATION_MS);
     return () => window.clearInterval(interval);
   }, [selected?.id, selected?.active]);
 
   async function rotateCode(eventId: string, wrapUp = false) {
     if (!memberDb) return;
-    const codeExpiresAt = Timestamp.fromDate(new Date(Date.now() + ROTATION_MS + 10_000));
+    const codeExpiresAt = Timestamp.fromDate(new Date(Date.now() + (wrapUp ? WRAP_UP_DURATION_MS : ROTATION_MS + 10_000)));
     await setDoc(doc(memberDb, "events", eventId), wrapUp ? { engagementCode: makeCode(), engagementExpiresAt: codeExpiresAt, updatedAt: serverTimestamp() } : { checkInCode: makeCode(), codeExpiresAt, updatedAt: serverTimestamp() }, { merge: true });
     setStatus("QR refreshed — the current code expires at " + formatTime({ toDate: () => codeExpiresAt.toDate() }) + ".");
   }
@@ -129,10 +130,10 @@ export function AttendanceAdmin({ member }: { member: GdgMember }) {
 
   async function openWrapUp() {
     if (!memberDb || !selected) return;
-    const expires = Timestamp.fromDate(new Date(Date.now() + ROTATION_MS + 10_000));
+    const expires = Timestamp.fromDate(new Date(Date.now() + WRAP_UP_DURATION_MS));
     await setDoc(doc(memberDb, "events", selected.id), { active: false, engagementActive: true, engagementCode: makeCode(), engagementExpiresAt: expires, updatedAt: serverTimestamp() }, { merge: true });
     await setDoc(doc(memberDb, "engagementPrompts", selected.id), { active: true, updatedAt: serverTimestamp() }, { merge: true });
-    setStatus("Wrap-up QR is live. Students must answer the session question and share a takeaway.");
+    setStatus("Wrap-up QR is live for 15 minutes. Students must answer the session question and share a takeaway.");
   }
 
   async function exportAttendance() {
