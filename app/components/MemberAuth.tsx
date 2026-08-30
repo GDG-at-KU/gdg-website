@@ -19,24 +19,29 @@ export function MemberAuth({ children }: Props) {
     if (!memberAuth) { setLoading(false); return; }
 
     let cancelled = false;
-    let unsubscribe: (() => void) | undefined;
+    const unsubscribe = onAuthStateChanged(memberAuth, (user) => {
+      const verifiedEmail = user?.email?.toLowerCase();
+      const canJoin = verifiedEmail && ALLOWED_EMAIL_DOMAINS.some((domain) => verifiedEmail.endsWith(domain));
+      setMember(user && canJoin ? { uid: user.uid, email: verifiedEmail } : null);
+      setLoading(false);
+    });
 
     async function restoreGoogleSession() {
-      await persistMemberSession();
-      await getRedirectResult(memberAuth!).catch(() => {
-        if (!cancelled) setMessage("Google sign-in could not be completed. Please try again.");
-      });
-      if (cancelled) return;
-      unsubscribe = onAuthStateChanged(memberAuth!, (user) => {
-        const verifiedEmail = user?.email?.toLowerCase();
-        const canJoin = verifiedEmail && ALLOWED_EMAIL_DOMAINS.some((domain) => verifiedEmail.endsWith(domain));
-        setMember(user && canJoin ? { uid: user.uid, email: verifiedEmail } : null);
-        setLoading(false);
-      });
+      try {
+        await persistMemberSession();
+        await getRedirectResult(memberAuth!);
+      } catch (error) {
+        if (!cancelled) {
+          const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
+          setMessage(code === "auth/unauthorized-domain"
+            ? "This website domain is not enabled in Firebase yet."
+            : "Google sign-in could not be completed. Please try again.");
+        }
+      }
     }
 
     void restoreGoogleSession();
-    return () => { cancelled = true; unsubscribe?.(); };
+    return () => { cancelled = true; unsubscribe(); };
   }, []);
 
   async function signInWithGoogle() {
@@ -46,7 +51,8 @@ export function MemberAuth({ children }: Props) {
       await persistMemberSession();
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
-      if (window.matchMedia("(pointer: coarse)").matches) {
+      const mobileBrowser = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (mobileBrowser || window.matchMedia("(pointer: coarse)").matches) {
         await signInWithRedirect(memberAuth, provider);
       } else {
         await signInWithPopup(memberAuth, provider);
