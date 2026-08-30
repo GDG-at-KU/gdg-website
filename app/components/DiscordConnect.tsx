@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { GdgMember } from "./MemberAuth";
 import { memberAuth } from "../lib/firebase";
 import { DiscordLink, loadDiscordLink } from "../lib/memberData";
+import { discordCallbackNotice } from "../lib/discordCallback";
 
 type Props = {
   member: GdgMember;
@@ -16,7 +17,7 @@ export function DiscordConnect({ member, onConnectionChange }: Props) {
   const [message, setMessage] = useState("");
   const [completedEvents, setCompletedEvents] = useState<number | null>(null);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const saved = await loadDiscordLink(member.uid);
       setLink(saved);
@@ -27,9 +28,20 @@ export function DiscordConnect({ member, onConnectionChange }: Props) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [member.uid, onConnectionChange]);
 
-  useEffect(() => { void refresh(); }, [member.uid]);
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  useEffect(() => {
+    const notice = discordCallbackNotice(window.location.search);
+    if (!notice) return;
+
+    setMessage(notice.message);
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete("discord");
+    cleanUrl.searchParams.delete("message");
+    window.history.replaceState(window.history.state, "", cleanUrl);
+  }, []);
 
   async function connect() {
     try {
@@ -64,7 +76,7 @@ export function DiscordConnect({ member, onConnectionChange }: Props) {
 
   return <section className="discord-connect" id="discord-access">
     <div><p className="member-eyebrow">REQUIRED COMMUNITY ACCESS</p><h2>Connect<br /><i>Discord.</i></h2><p>Link the Discord account you use in GDG KU. Two completed sessions unlock the Consistent Member role and the internship notifier.</p></div>
-    <aside>{loading ? <p>Checking Discord access...</p> : link ? <><span className="discord-connected">CONNECTED</span><h3>@{link.username}</h3><p>{link.consistentMember ? "Consistent Member is active." : completedEvents === null ? "Check your progress to see completed sessions and unlock status." : `${completedEvents}/2 completed sessions. Each session needs check-in and the wrap-up learning check.`}</p><button type="button" onClick={() => void syncRole()}>Check my progress →</button></> : <><span>STEP 1 OF 1</span><h3>Discord is required</h3><p>Join the GDG KU Discord server first, then securely connect your Discord account here.</p><a href="https://discord.gg/BmKfZUnaQ" target="_blank" rel="noreferrer">Join Discord →</a><button type="button" onClick={() => void connect()}>Connect Discord →</button></>}</aside>
+    <aside>{loading ? <p>Checking Discord access...</p> : link ? <><span className="discord-connected">CONNECTED</span><h3>@{link.username}</h3><p>{link.consistentMember ? "Consistent Member is active." : completedEvents === null ? "Check your progress to see completed sessions and unlock status." : `${completedEvents}/2 completed sessions. Each session needs check-in and the wrap-up learning check.`}</p><button type="button" onClick={() => void syncRole()}>Check my progress →</button></> : <><span>DISCORD MEMBERSHIP</span><h3>Join or verify</h3><p>New here? Join the GDG KU Discord first. Already in the server? Verify the Discord account you use there.</p><a href="https://discord.gg/BmKfZUnaQ" target="_blank" rel="noreferrer">Join Discord ↗</a><button type="button" onClick={() => void connect()}>Already joined? Verify my account →</button></>}</aside>
     {message && <p className="discord-message" role="status">{message}</p>}
   </section>;
 }
