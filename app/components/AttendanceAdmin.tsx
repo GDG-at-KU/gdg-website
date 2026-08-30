@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, setDoc, Timestamp, where } from "firebase/firestore";
 import { GdgMember, MemberSignOut } from "./MemberAuth";
 import { SectionMenu } from "./SectionMenu";
-import { memberDb } from "../lib/firebase";
+import { memberAuth, memberDb } from "../lib/firebase";
 
 const ADMIN_EMAILS = ["heet2404@gmail.com", "hpa2309@gmail.com"];
 const ROTATION_MS = 45_000;
@@ -19,6 +19,7 @@ type EventSession = {
   engagementActive?: boolean;
   engagementCode?: string;
   engagementExpiresAt?: { toDate?: () => Date };
+  attendanceEligible?: boolean;
 };
 
 function makeCode() {
@@ -59,6 +60,7 @@ export function AttendanceAdmin({ member }: { member: GdgMember }) {
           engagementActive: data.engagementActive === true,
           engagementCode: typeof data.engagementCode === "string" ? data.engagementCode : "",
           engagementExpiresAt: data.engagementExpiresAt,
+          attendanceEligible: data.attendanceEligible === true,
         };
       }).sort((a, b) => Number(b.active) - Number(a.active));
       setSessions(next);
@@ -93,7 +95,7 @@ export function AttendanceAdmin({ member }: { member: GdgMember }) {
     const codeExpiresAt = Timestamp.fromDate(new Date(Date.now() + ROTATION_MS + 10_000));
     await setDoc(reference, {
       title: title.trim(), active: true, checkInCode: makeCode(), codeExpiresAt, engagementActive: false,
-      engagementCode: "", engagementExpiresAt: null, correctAnswer,
+      engagementCode: "", engagementExpiresAt: null, attendanceEligible: false, completedAt: null, correctAnswer,
       createdBy: member.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
     });
     await setDoc(doc(memberDb, "engagementPrompts", reference.id), { title: title.trim(), question: question.trim(), options: options.map((option) => option.trim()), active: false, updatedAt: serverTimestamp() });
@@ -104,9 +106,25 @@ export function AttendanceAdmin({ member }: { member: GdgMember }) {
 
   async function stopSession() {
     if (!memberDb || !selected) return;
-    await setDoc(doc(memberDb, "events", selected.id), { active: false, engagementActive: false, updatedAt: serverTimestamp() }, { merge: true });
+    const countsForConsistency = selected.engagementActive === true;
+    await setDoc(doc(memberDb, "events", selected.id), {
+      active: false, engagementActive: false, attendanceEligible: countsForConsistency,
+      completedAt: countsForConsistency ? serverTimestamp() : null, updatedAt: serverTimestamp(),
+    }, { merge: true });
     await setDoc(doc(memberDb, "engagementPrompts", selected.id), { active: false, updatedAt: serverTimestamp() }, { merge: true });
-    setStatus("Session closed. New check-ins are now blocked.");
+    if (!countsForConsistency) {
+      setStatus("Session closed. It will not count toward Discord access because no wrap-up was opened.");
+      return;
+    }
+    try {
+      const token = await memberAuth?.currentUser?.getIdToken();
+      const response = await fetch("/api/discord/reconcile-roles", { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const payload = await response.json() as { reviewed?: number; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Discord access could not be reviewed.");
+      setStatus(`Session closed and counted. Discord access was reviewed for ${payload.reviewed || 0} connected members.`);
+    } catch (error) {
+      setStatus(`Session closed and counted. Discord review needs a retry: ${error instanceof Error ? error.message : "unknown error"}`);
+    }
   }
 
   async function openWrapUp() {

@@ -26,7 +26,9 @@ interface Env {
   };
 }
 
-type DiscordLink = { discordId: string; username: string; consistentMember: boolean };
+type DiscordLink = { discordId: string; username: string; consistentMember: boolean; linkedAt?: string; consecutiveMisses?: number };
+type FirebaseIdentity = { uid: string; email: string };
+const ORGANIZER_EMAILS = new Set(["heet2404@gmail.com", "hpa2309@gmail.com"]);
 const encoder = new TextEncoder();
 
 function json(data: unknown, status = 200) { return Response.json(data, { status }); }
@@ -41,14 +43,18 @@ function discordReady(env: Env) {
   return Boolean(env.FIREBASE_WEB_API_KEY && env.FIREBASE_PROJECT_ID && env.FIREBASE_SERVICE_ACCOUNT_EMAIL && env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY && env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET && env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_VERIFIED_ROLE_ID && env.DISCORD_CONSISTENT_ROLE_ID && env.DISCORD_REDIRECT_URI && env.DISCORD_STATE_SECRET);
 }
 
-async function firebaseUid(request: Request, env: Env) {
+async function firebaseIdentity(request: Request, env: Env): Promise<FirebaseIdentity> {
   const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
   if (!token || !env.FIREBASE_WEB_API_KEY) throw new Error("Sign in with Google before connecting Discord.");
   const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(env.FIREBASE_WEB_API_KEY)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idToken: token }) });
-  const payload = await response.json() as { users?: Array<{ localId?: string }> };
-  const uid = payload.users?.[0]?.localId;
-  if (!response.ok || !uid) throw new Error("Your Google session has expired. Sign in again and retry.");
-  return uid;
+  const payload = await response.json() as { users?: Array<{ localId?: string; email?: string }> };
+  const user = payload.users?.[0];
+  if (!response.ok || !user?.localId || !user.email) throw new Error("Your Google session has expired. Sign in again and retry.");
+  return { uid: user.localId, email: user.email.toLowerCase() };
+}
+
+async function firebaseUid(request: Request, env: Env) {
+  return (await firebaseIdentity(request, env)).uid;
 }
 
 async function signState(uid: string, secret: string) {
@@ -99,17 +105,28 @@ async function firestoreRequest(env: Env, path: string, init: RequestInit = {}) 
 async function readDiscordLink(env: Env, uid: string): Promise<DiscordLink | null> {
   const response = await firestoreRequest(env, `discordLinks/${encodeURIComponent(uid)}`);
   if (response.status === 404) return null;
-  const payload = await response.json() as { fields?: Record<string, { stringValue?: string; booleanValue?: boolean }> };
+  const payload = await response.json() as { fields?: Record<string, { stringValue?: string; booleanValue?: boolean; timestampValue?: string; integerValue?: string }> };
   const fields = payload.fields;
   const discordId = fields?.discordId?.stringValue;
   const username = fields?.username?.stringValue;
-  return discordId && username ? { discordId, username, consistentMember: fields?.consistentMember?.booleanValue === true } : null;
+  return discordId && username ? {
+    discordId,
+    username,
+    consistentMember: fields?.consistentMember?.booleanValue === true,
+    linkedAt: fields?.linkedAt?.timestampValue,
+    consecutiveMisses: Number(fields?.consecutiveMisses?.integerValue || 0),
+  } : null;
 }
 
 async function writeDiscordLink(env: Env, uid: string, link: DiscordLink) {
-  const body = { fields: { discordId: { stringValue: link.discordId }, username: { stringValue: link.username }, consistentMember: { booleanValue: link.consistentMember }, linkedAt: { timestampValue: new Date().toISOString() } } };
+  const body = { fields: {
+    discordId: { stringValue: link.discordId }, username: { stringValue: link.username },
+    consistentMember: { booleanValue: link.consistentMember },
+    linkedAt: { timestampValue: link.linkedAt || new Date().toISOString() },
+    consecutiveMisses: { integerValue: String(link.consecutiveMisses || 0) },
+  } };
   const query = new URLSearchParams();
-  ["discordId", "username", "consistentMember", "linkedAt"].forEach((field) => query.append("updateMask.fieldPaths", field));
+  ["discordId", "username", "consistentMember", "linkedAt", "consecutiveMisses"].forEach((field) => query.append("updateMask.fieldPaths", field));
   const response = await firestoreRequest(env, `discordLinks/${encodeURIComponent(uid)}?${query}`, { method: "PATCH", body: JSON.stringify(body) });
   if (!response.ok) throw new Error("Could not save your verified Discord connection.");
 }
@@ -119,12 +136,17 @@ async function addDiscordRole(env: Env, discordId: string, roleId: string) {
   if (!response.ok && response.status !== 204) throw new Error("Discord could not assign this role. Check the bot's role order and Manage Roles permission.");
 }
 
+async function removeDiscordRole(env: Env, discordId: string, roleId: string) {
+  const response = await fetch(`https://discord.com/api/v10/guilds/${encodeURIComponent(env.DISCORD_GUILD_ID!)}/members/${encodeURIComponent(discordId)}/roles/${encodeURIComponent(roleId)}`, { method: "DELETE", headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` } });
+  if (!response.ok && response.status !== 204) throw new Error("Discord could not remove this role. Check the bot's role order and Manage Roles permission.");
+}
+
 async function isGuildMember(env: Env, discordId: string) {
   const response = await fetch(`https://discord.com/api/v10/guilds/${encodeURIComponent(env.DISCORD_GUILD_ID!)}/members/${encodeURIComponent(discordId)}`, { headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` } });
   return response.status === 200;
 }
 
-async function completedEventCount(env: Env, uid: string) {
+async function completedEventIds(env: Env, uid: string) {
   const query = (collectionId: string) => firestoreRequest(env, "documents:runQuery", { method: "POST", body: JSON.stringify({ structuredQuery: { from: [{ collectionId }], where: { fieldFilter: { field: { fieldPath: "memberId" }, op: "EQUAL", value: { stringValue: uid } } }, select: { fields: [{ fieldPath: "eventId" }] }, limit: 100 } }) });
   const [attendanceResponse, engagementResponse] = await Promise.all([query("attendance"), query("engagement")]);
   const extract = async (response: Response) => {
@@ -132,7 +154,51 @@ async function completedEventCount(env: Env, uid: string) {
     return new Set(rows.map((row) => row.document?.fields?.eventId?.stringValue).filter((eventId): eventId is string => Boolean(eventId)));
   };
   const [attendance, engagement] = await Promise.all([extract(attendanceResponse), extract(engagementResponse)]);
-  return [...attendance].filter((eventId) => engagement.has(eventId)).length;
+  return new Set([...attendance].filter((eventId) => engagement.has(eventId)));
+}
+
+async function countedEventsSince(env: Env, linkedAt?: string) {
+  const response = await firestoreRequest(env, "documents:runQuery", { method: "POST", body: JSON.stringify({ structuredQuery: { from: [{ collectionId: "events" }], limit: 100 } }) });
+  if (!response.ok) throw new Error("Could not read completed GDG KU sessions.");
+  const rows = await response.json() as Array<{ document?: { name?: string; fields?: Record<string, { booleanValue?: boolean; timestampValue?: string }> } }>;
+  const linkedTime = linkedAt ? Date.parse(linkedAt) : Date.now();
+  return rows.map((row) => {
+    const id = row.document?.name?.split("/").pop();
+    const fields = row.document?.fields;
+    const completedAt = fields?.completedAt?.timestampValue;
+    return id && fields?.attendanceEligible?.booleanValue === true && completedAt ? { id, completedAt } : null;
+  }).filter((event): event is { id: string; completedAt: string } => Boolean(event))
+    .filter((event) => Date.parse(event.completedAt) >= linkedTime)
+    .sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
+    .slice(0, 3);
+}
+
+async function reconcileDiscordMember(env: Env, uid: string, link: DiscordLink) {
+  if (!await isGuildMember(env, link.discordId)) throw new Error("Join the GDG KU Discord server, then connect Discord again.");
+  const [completedIds, sessions] = await Promise.all([completedEventIds(env, uid), countedEventsSince(env, link.linkedAt)]);
+  let consecutiveMisses = 0;
+  for (const session of sessions) {
+    if (completedIds.has(session.id)) break;
+    consecutiveMisses += 1;
+  }
+  const consistentMember = consecutiveMisses < 3;
+  if (consistentMember) await addDiscordRole(env, link.discordId, env.DISCORD_CONSISTENT_ROLE_ID!);
+  else await removeDiscordRole(env, link.discordId, env.DISCORD_CONSISTENT_ROLE_ID!);
+  await writeDiscordLink(env, uid, { ...link, consistentMember, consecutiveMisses });
+  return { completedEvents: completedIds.size, countedSessions: sessions.length, consecutiveMisses, consistentMember };
+}
+
+async function allDiscordLinks(env: Env) {
+  const response = await firestoreRequest(env, "documents:runQuery", { method: "POST", body: JSON.stringify({ structuredQuery: { from: [{ collectionId: "discordLinks" }], limit: 100 } }) });
+  if (!response.ok) throw new Error("Could not read Discord connections.");
+  const rows = await response.json() as Array<{ document?: { name?: string; fields?: Record<string, { stringValue?: string; booleanValue?: boolean; timestampValue?: string; integerValue?: string }> } }>;
+  return rows.map((row) => {
+    const uid = row.document?.name?.split("/").pop();
+    const fields = row.document?.fields;
+    const discordId = fields?.discordId?.stringValue;
+    const username = fields?.username?.stringValue;
+    return uid && discordId && username ? { uid, link: { discordId, username, consistentMember: fields?.consistentMember?.booleanValue === true, linkedAt: fields?.linkedAt?.timestampValue, consecutiveMisses: Number(fields?.consecutiveMisses?.integerValue || 0) } } : null;
+  }).filter((entry): entry is { uid: string; link: DiscordLink } => Boolean(entry));
 }
 
 interface ExecutionContext {
@@ -175,8 +241,17 @@ const worker = {
         const user = await userResponse.json() as { id?: string; username?: string; global_name?: string };
         if (!userResponse.ok || !user.id || !user.username) throw new Error("Discord account details could not be verified.");
         if (!await isGuildMember(env, user.id)) { memberPage.searchParams.set("discord", "join"); return Response.redirect(memberPage, 302); }
-        await writeDiscordLink(env, uid, { discordId: user.id, username: user.global_name || user.username, consistentMember: false });
+        const existingLink = await readDiscordLink(env, uid);
+        const link = {
+          discordId: user.id,
+          username: user.global_name || user.username,
+          consistentMember: existingLink?.consistentMember ?? true,
+          linkedAt: existingLink?.linkedAt,
+          consecutiveMisses: existingLink?.consecutiveMisses ?? 0,
+        };
+        await writeDiscordLink(env, uid, link);
         await addDiscordRole(env, user.id, env.DISCORD_VERIFIED_ROLE_ID!);
+        await reconcileDiscordMember(env, uid, link);
         memberPage.searchParams.set("discord", "connected");
       } catch (error) { memberPage.searchParams.set("discord", "error"); memberPage.searchParams.set("message", error instanceof Error ? error.message : "Discord connection failed."); }
       return Response.redirect(memberPage, 302);
@@ -188,15 +263,21 @@ const worker = {
         const uid = await firebaseUid(request, env);
         const link = await readDiscordLink(env, uid);
         if (!link) return json({ error: "Connect Discord before checking role progress." }, 400);
-        const completedEvents = await completedEventCount(env, uid);
-        const consistentMember = completedEvents >= 2;
-        if (consistentMember) {
-          if (!await isGuildMember(env, link.discordId)) return json({ error: "Join the GDG KU Discord server, then connect Discord again." }, 400);
-          await addDiscordRole(env, link.discordId, env.DISCORD_CONSISTENT_ROLE_ID!);
-          await writeDiscordLink(env, uid, { ...link, consistentMember: true });
-        }
-        return json({ completedEvents, consistentMember });
+        return json(await reconcileDiscordMember(env, uid, link));
       } catch (error) { return json({ error: error instanceof Error ? error.message : "Could not sync your Discord role." }, 400); }
+    }
+
+    if (url.pathname === "/api/discord/reconcile-roles" && request.method === "POST") {
+      if (!discordReady(env)) return json({ error: "Discord role sync is not configured yet." }, 503);
+      try {
+        const identity = await firebaseIdentity(request, env);
+        if (!ORGANIZER_EMAILS.has(identity.email)) return json({ error: "Only GDG KU organizers can review community access." }, 403);
+        const links = await allDiscordLinks(env);
+        const results = await Promise.allSettled(links.map(({ uid, link }) => reconcileDiscordMember(env, uid, link)));
+        const updated = results.filter((result) => result.status === "fulfilled").length;
+        const removed = results.filter((result) => result.status === "fulfilled" && !result.value.consistentMember).length;
+        return json({ reviewed: links.length, updated, removed });
+      } catch (error) { return json({ error: error instanceof Error ? error.message : "Could not review Discord roles." }, 400); }
     }
 
     // Firebase redirect sign-in uses helper pages under /__/auth and
