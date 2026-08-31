@@ -7,9 +7,7 @@ const links = [
   ["02", "Find a co-builder", "/buddies"],
   ["03", "My member pass", "/member"],
   ["04", "Calendar", "/calendar"],
-  ["05", "Tracks", "/tracks"],
-  ["06", "About", "/about"],
-  ["07", "Team", "/team"],
+  ["05", "About", "/about"],
 ];
 
 export function SectionMenu() {

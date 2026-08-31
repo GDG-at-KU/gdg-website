@@ -201,6 +201,51 @@ async function allDiscordLinks(env: Env) {
   }).filter((entry): entry is { uid: string; link: DiscordLink } => Boolean(entry));
 }
 
+type FirestoreDocument = { name?: string; fields?: Record<string, { stringValue?: string; booleanValue?: boolean }> };
+
+async function queryCollection(env: Env, collectionId: string, fieldPath?: string, value?: string) {
+  const structuredQuery: Record<string, unknown> = { from: [{ collectionId }], limit: 100 };
+  if (fieldPath && value) structuredQuery.where = { fieldFilter: { field: { fieldPath }, op: "EQUAL", value: { stringValue: value } } };
+  const response = await firestoreRequest(env, "documents:runQuery", { method: "POST", body: JSON.stringify({ structuredQuery }) });
+  if (!response.ok) throw new Error(`Could not read ${collectionId}.`);
+  const rows = await response.json() as Array<{ document?: FirestoreDocument }>;
+  return rows.map((row) => row.document).filter((document): document is FirestoreDocument => Boolean(document?.name));
+}
+
+async function deleteFirestoreDocument(env: Env, path: string) {
+  const response = await firestoreRequest(env, path, { method: "DELETE" });
+  if (!response.ok && response.status !== 404) throw new Error("Could not remove the requested Firestore record.");
+}
+
+async function deleteClosedSessionHistory(env: Env) {
+  const events = await queryCollection(env, "events");
+  const closed = events.filter((event) => event.fields?.active?.booleanValue !== true && event.fields?.engagementActive?.booleanValue !== true);
+  let attendance = 0, wrapUps = 0;
+  for (const event of closed) {
+    const eventId = event.name!.split("/").pop()!;
+    const [checkIns, engagement] = await Promise.all([queryCollection(env, "attendance", "eventId", eventId), queryCollection(env, "engagement", "eventId", eventId)]);
+    await Promise.all([...checkIns.map((record) => deleteFirestoreDocument(env, record.name!.replace(/^.*\/documents\//, ""))), ...engagement.map((record) => deleteFirestoreDocument(env, record.name!.replace(/^.*\/documents\//, "")))]);
+    attendance += checkIns.length; wrapUps += engagement.length;
+    await Promise.all([deleteFirestoreDocument(env, `engagementPrompts/${encodeURIComponent(eventId)}`), deleteFirestoreDocument(env, `events/${encodeURIComponent(eventId)}`)]);
+  }
+  return { sessions: closed.length, attendance, wrapUps };
+}
+
+async function hideDirectoryMember(env: Env, email: string) {
+  const members = await queryCollection(env, "members", "email", email.toLowerCase());
+  if (!members.length) throw new Error("No member profile was found for that email.");
+  let requests = 0;
+  for (const profile of members) {
+    const uid = profile.name!.split("/").pop()!;
+    const [sent, received] = await Promise.all([queryCollection(env, "buddyRequests", "fromUid", uid), queryCollection(env, "buddyRequests", "toUid", uid)]);
+    const unique = new Map([...sent, ...received].map((request) => [request.name!, request]));
+    await Promise.all([...unique.values()].map((request) => deleteFirestoreDocument(env, request.name!.replace(/^.*\/documents\//, ""))));
+    requests += unique.size;
+    await deleteFirestoreDocument(env, `memberDirectory/${encodeURIComponent(uid)}`);
+  }
+  return { profiles: members.length, requests };
+}
+
 interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
   passThroughOnException(): void;
@@ -278,6 +323,25 @@ const worker = {
         const removed = results.filter((result) => result.status === "fulfilled" && !result.value.consistentMember).length;
         return json({ reviewed: links.length, updated, removed });
       } catch (error) { return json({ error: error instanceof Error ? error.message : "Could not review Discord roles." }, 400); }
+    }
+
+    if (url.pathname === "/api/admin/cleanup-closed-sessions" && request.method === "POST") {
+      try {
+        const identity = await firebaseIdentity(request, env);
+        if (!ORGANIZER_EMAILS.has(identity.email)) return json({ error: "Only GDG KU organizers can remove session history." }, 403);
+        return json(await deleteClosedSessionHistory(env));
+      } catch (error) { return json({ error: error instanceof Error ? error.message : "Could not remove closed session history." }, 400); }
+    }
+
+    if (url.pathname === "/api/admin/hide-directory-member" && request.method === "POST") {
+      try {
+        const identity = await firebaseIdentity(request, env);
+        if (!ORGANIZER_EMAILS.has(identity.email)) return json({ error: "Only GDG KU organizers can manage the directory." }, 403);
+        const payload = await request.json() as { email?: string };
+        const email = payload.email?.trim().toLowerCase();
+        if (!email) return json({ error: "A member email is required." }, 400);
+        return json(await hideDirectoryMember(env, email));
+      } catch (error) { return json({ error: error instanceof Error ? error.message : "Could not hide this member from CoBuilder." }, 400); }
     }
 
     // Firebase redirect sign-in uses helper pages under /__/auth and

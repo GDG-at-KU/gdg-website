@@ -8,6 +8,7 @@ type ScannerControls = { stop: () => void };
 
 export function AttendanceScanner({ member, discordConnected }: { member: GdgMember; discordConnected: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const wrapUpRef = useRef<HTMLFormElement>(null);
   const controlsRef = useRef<ScannerControls | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -25,6 +26,10 @@ export function AttendanceScanner({ member, discordConnected }: { member: GdgMem
   };
 
   useEffect(() => () => controlsRef.current?.stop(), []);
+
+  useEffect(() => {
+    if (wrapUp) wrapUpRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [wrapUp]);
 
   async function recordCheckIn(rawCode: string) {
     try {
@@ -119,7 +124,7 @@ export function AttendanceScanner({ member, discordConnected }: { member: GdgMem
       </div>
       {error && <p className={"member-error"}>{error}</p>}
       {result && <div className={"member-scan-result"}><span>CHECK-IN SAVED</span><b>{result}</b><p>You are checked in. Scanning again will not create a duplicate.</p></div>}
-      {wrapUp && <form className="member-wrapup" onSubmit={submitWrapUp}><p className="member-eyebrow">SESSION WRAP-UP · {wrapUp.prompt.title}</p><h3>{wrapUp.prompt.question}</h3><div>{wrapUp.prompt.options.map((option, index) => <label key={option}><input type="radio" name="wrapup-answer" checked={answerIndex === index} onChange={() => setAnswerIndex(index)} /> {option}</label>)}</div><label>One thing you learned <textarea value={reflection} onChange={(event) => setReflection(event.target.value)} maxLength={280} placeholder="A short takeaway helps us improve the next session." required /></label><button type="submit" disabled={answerIndex === null || isSubmittingWrapUp}>{isSubmittingWrapUp ? "Saving wrap-up…" : "Submit wrap-up →"}</button></form>}
+      {wrapUp && <form ref={wrapUpRef} className="member-wrapup" onSubmit={submitWrapUp}><p className="member-eyebrow">SESSION WRAP-UP · {wrapUp.prompt.title}</p><h3>{wrapUp.prompt.question}</h3><div>{wrapUp.prompt.options.map((option, index) => <label key={option}><input type="radio" name="wrapup-answer" checked={answerIndex === index} onChange={() => setAnswerIndex(index)} /> {option}</label>)}</div><label>One thing you learned <textarea value={reflection} onChange={(event) => setReflection(event.target.value)} maxLength={280} placeholder="A short takeaway helps us improve the next session." required /></label><button type="submit" disabled={answerIndex === null || isSubmittingWrapUp}>{isSubmittingWrapUp ? "Saving wrap-up…" : "Submit wrap-up →"}</button></form>}
       <form className={"member-manual-form"} onSubmit={submitManual}><label htmlFor="attendance-code">Camera not working?</label><div><input id="attendance-code" value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="Paste the live GDG KU event code" /><button type="submit">Check in</button></div></form>
     </section>
   );
